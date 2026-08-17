@@ -598,11 +598,9 @@
             for (const file of filesToFetch) {
               let parsed = null;
               if (supabase) {
-                try {
-                  const { data } = await supabase.storage.from(BUCKET_NAME).download(`configs/${file.key}.json`);
-                  if (data) parsed = JSON.parse(await data.text());
-                } catch(e) {}
+                parsed = await downloadJsonNoCache(`configs/${file.key}.json`);
               }
+
               if (!parsed) {
                 const loc = localStorage.getItem(file.localKey);
                 if (loc) { try { parsed = JSON.parse(loc); } catch(e){} }
