@@ -90,8 +90,37 @@
     const BUCKET_NAME = "bi-files";
 
     const supabase = (SUPABASE_URL && SUPABASE_URL !== "SUA_URL_DO_SUPABASE")
-      ? window.supabase?.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+      ? window.supabase?.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+          realtime: { params: { eventsPerSecond: 10 } },
+          global: {
+            // Evita cache do navegador/CDN nas leituras (metas sempre frescas)
+            fetch: (input, init = {}) => {
+              const headers = new Headers(init.headers || {});
+              headers.set('Cache-Control', 'no-cache, no-store, max-age=0');
+              headers.set('Pragma', 'no-cache');
+              return fetch(input, { ...init, headers, cache: 'no-store' });
+            }
+          }
+        })
       : null;
+
+    // Baixa um JSON do Storage sempre sem cache (usa timestamp na URL pública)
+    const downloadJsonNoCache = async (path) => {
+      if (!supabase) return null;
+      try {
+        const { data: pub } = supabase.storage.from(BUCKET_NAME).getPublicUrl(path);
+        if (pub?.publicUrl) {
+          const res = await fetch(`${pub.publicUrl}?t=${Date.now()}`, { cache: 'no-store' });
+          if (res.ok) return await res.json();
+        }
+      } catch (e) {}
+      try {
+        const { data } = await supabase.storage.from(BUCKET_NAME).download(`${path}?t=${Date.now()}`);
+        if (data) return JSON.parse(await data.text());
+      } catch (e) {}
+      return null;
+    };
+
 
     if (window.Chart && window.ChartDataLabels) {
       window.Chart.register(window.ChartDataLabels);
