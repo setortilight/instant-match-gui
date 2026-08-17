@@ -675,10 +675,11 @@
 
           try {
             const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
-            const { error } = await supabase.storage.from(BUCKET_NAME).upload('configs/settings.json', blob, { upsert: true, contentType: 'application/json' });
+            const { error } = await supabase.storage.from(BUCKET_NAME).upload('configs/settings.json', blob, { upsert: true, contentType: 'application/json', cacheControl: '0' });
             if (error) throw error;
             sucessoStorage = true;
           } catch(e) { mensagensErro += `Storage: ${e.message || 'Erro'}.`; }
+
         }
 
         if (sucessoStorage || sucessoDB) {
