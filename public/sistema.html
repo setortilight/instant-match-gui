@@ -1,0 +1,2382 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Light BI Telecom - Gestão de Vendas Colaborativo</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Fonte Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+  <!-- React e ReactDOM UMD -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <!-- Babel para interpretar JSX no navegador -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- FontAwesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- SheetJS / XLSX para leitura de CSV e Excel -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Chart.js e Plugin DataLabels -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f8fafc;
+      color: #1e293b;
+      overflow-x: hidden;
+    }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #10b981; }
+  </style>
+</head>
+<body class="bg-slate-50">
+
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useMemo, useEffect, useRef, Component } = React;
+
+    class ErrorBoundary extends Component {
+      constructor(props) {
+        super(props);
+        this.state = { hasError: false, error: null };
+      }
+
+      static getDerivedStateFromError(error) {
+        return { hasError: true, error };
+      }
+
+      componentDidCatch(error, errorInfo) {
+        console.error("Erro capturado na ErrorBoundary:", error, errorInfo);
+      }
+
+      handleReset = () => {
+        this.setState({ hasError: false, error: null });
+      };
+
+      render() {
+        if (this.state.hasError) {
+          return (
+            <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center p-6 font-sans">
+              <div className="bg-slate-800 border border-slate-700 rounded-2xl p-8 max-w-lg w-full text-center shadow-2xl">
+                <div className="w-16 h-16 bg-amber-500/10 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-4 border border-amber-500/20">
+                  <i className="fa-solid fa-triangle-exclamation text-2xl"></i>
+                </div>
+                <h2 className="text-2xl font-bold mb-2">Proteção de Interface Acionada</h2>
+                <p className="text-slate-400 text-sm mb-6">
+                  Ocorreu um erro de processamento estrutural. Clique abaixo para recarregar o painel com segurança.
+                </p>
+                <button onClick={this.handleReset} className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-3 rounded-xl transition-all shadow-lg cursor-pointer">
+                  <i className="fa-solid fa-rotate-right"></i> Recarregar Painel
+                </button>
+              </div>
+            </div>
+          );
+        }
+        return this.props.children;
+      }
+    }
+
+    const SUPABASE_URL = "https://hcnznoqfoefwilibropy.supabase.co"; 
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhjbnpub3Fmb2Vmd2lsaWJyb3B5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2Mjg1MTYsImV4cCI6MjEwMjIwNDUxNn0.aTHgSBhD10yfgXsVQuPFadmnmMVtl_lkE_SdkVLxJVo";
+    const BUCKET_NAME = "bi-files";
+
+    const supabase = (SUPABASE_URL && SUPABASE_URL !== "SUA_URL_DO_SUPABASE")
+      ? window.supabase?.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+      : null;
+
+    if (window.Chart && window.ChartDataLabels) {
+      window.Chart.register(window.ChartDataLabels);
+    }
+
+    const Icon = ({ name, className = "w-5 h-5" }) => {
+      const spanRef = useRef(null);
+      useEffect(() => {
+        if (!spanRef.current) return;
+        spanRef.current.innerHTML = `<i data-lucide="${name}" class="${className}"></i>`;
+        if (window.lucide && typeof window.lucide.createIcons === 'function') {
+          window.lucide.createIcons({ scope: spanRef.current });
+        }
+      }, [name, className]);
+      return <span ref={spanRef} className="inline-flex items-center justify-center shrink-0" />;
+    };
+
+    const CHART_PALETTE = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#64748b'];
+
+    const MENU_ITEMS = [
+      { id: 'vendas', icon: 'trending-up', label: 'Dashboard' },
+      { id: 'equipes', icon: 'calendar-days', label: 'Semana por Semana' },
+      { id: 'vendedores', icon: 'medal', label: 'Ranking' },
+      { id: 'churn', icon: 'trending-down', label: 'Churn Geral' },
+      { id: 'fpd', icon: 'alert-circle', label: 'Setor FPD' },
+      { id: 'eficacia', icon: 'pie-chart', label: 'Eficácia' },
+      { id: 'cancelamento', icon: 'ban', label: 'Cancelamento' },
+      { id: 'qualidade', icon: 'shield-check', label: 'Qualidade' },
+      { id: 'financeiro', icon: 'banknote', label: 'Financeiro' },
+      { id: 'metas', icon: 'settings-2', label: 'Metas / Config' }
+    ];
+
+    const STATUS_COLORS = {
+      instalado: { bg: 'bg-emerald-100 text-emerald-700', border: 'border-l-emerald-500', dot: 'bg-emerald-500', hex: '#10b981', text: 'text-emerald-600', lightBg: 'bg-emerald-50' },
+      fechado:   { bg: 'bg-red-100 text-red-700',       border: 'border-l-red-500',     dot: 'bg-red-500', hex: '#ef4444', text: 'text-red-600', lightBg: 'bg-red-50' },
+      agendado:  { bg: 'bg-blue-100 text-blue-700',     border: 'border-l-blue-500',    dot: 'bg-blue-500', hex: '#3b82f6', text: 'text-blue-600', lightBg: 'bg-blue-50' },
+      tratar:    { bg: 'bg-yellow-100 text-yellow-800', border: 'border-l-yellow-400',  dot: 'bg-yellow-400', hex: '#eab308', text: 'text-yellow-700', lightBg: 'bg-yellow-50' },
+      tecnico:   { bg: 'bg-orange-100 text-orange-800', border: 'border-l-orange-500', dot: 'bg-orange-500', hex: '#f97316', text: 'text-orange-600', lightBg: 'bg-orange-50' },
+      outros:    { bg: 'bg-slate-100 text-slate-700',   border: 'border-l-slate-400',   dot: 'bg-slate-400', hex: '#94a3b8', text: 'text-slate-600', lightBg: 'bg-slate-100' }
+    };
+
+    const getStatusKey = (status) => {
+      if (!status) return 'outros';
+      const s = String(status).toLowerCase();
+      if (s.includes('instalado') || s.includes('conclu') || s.includes('ok')) return 'instalado';
+      if (s.includes('fechado') || s.includes('ausente') || s.includes('não atende')) return 'fechado';
+      if (s.includes('agendado') || s.includes('marcad') || s.includes('reagendad')) return 'agendado';
+      if (s.includes('tratar') || s.includes('pendente')) return 'tratar';
+      if (s.includes('técnico') || s.includes('tecnico') || s.includes('inviab')) return 'tecnico';
+      return 'outros';
+    };
+
+    const getStatusColor = (status) => {
+      const key = getStatusKey(status);
+      return STATUS_COLORS[key].bg;
+    };
+
+    const formatToDDMMYYYY = (val) => {
+      if (!val) return '';
+      let str = String(val).trim();
+      if (!str || str.toLowerCase() === 'undefined' || str.toLowerCase() === 'null') return '';
+      if (/^\d{5}(\.\d+)?$/.test(str) && Number(str) > 20000) {
+        const d = new Date((Number(str) - (25567 + 2)) * 86400 * 1000);
+        return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth()+1).padStart(2, '0')}/${d.getFullYear()}`;
+      }
+      if (str.includes('T')) str = str.split('T')[0];
+      if (str.includes(' ')) str = str.split(' ')[0];
+      if (/^\d{2}[\/-]\d{2}[\/-]\d{4}$/.test(str)) return str.replace(/-/g, '/');
+      if (/^\d{4}[\/-]\d{2}[\/-]\d{2}$/.test(str)) {
+        const parts = str.split(/[\/-]/);
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+      }
+      return str;
+    };
+
+    const SummaryCards = ({ stats, activeStatusKey, onCardClick }) => (
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div onClick={() => onCardClick && onCardClick('TODOS')} className={`bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border p-4 border-l-4 border-l-slate-700 flex flex-col justify-between hover:scale-[1.02] transition-all cursor-pointer ${activeStatusKey === 'TODOS' || !activeStatusKey ? 'ring-2 ring-slate-400 bg-slate-50' : 'border-slate-100'}`}>
+          <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">Total de Vendas</span>
+          <div className="flex items-end justify-between mt-2">
+            <span className="text-2xl font-black text-slate-800">{stats.total}</span>
+            <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-1 rounded-md">100.0%</span>
+          </div>
+        </div>
+        <div onClick={() => onCardClick && onCardClick('instalado')} className={`bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border p-4 border-l-4 border-l-emerald-50 flex flex-col justify-between hover:scale-[1.02] transition-all cursor-pointer ${activeStatusKey === 'instalado' ? 'ring-2 ring-emerald-500 bg-emerald-50/50' : 'border-slate-100'}`}>
+          <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">Instalado</span>
+          <div className="flex items-end justify-between mt-2">
+            <span className="text-2xl font-black text-slate-800">{stats.instalado.count}</span>
+            <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md">{stats.instalado.percent}%</span>
+          </div>
+        </div>
+        <div onClick={() => onCardClick && onCardClick('agendado')} className={`bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border p-4 border-l-4 border-l-blue-500 flex flex-col justify-between hover:scale-[1.02] transition-all cursor-pointer ${activeStatusKey === 'agendado' ? 'ring-2 ring-blue-500 bg-blue-50/50' : 'border-slate-100'}`}>
+          <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">Agendado</span>
+          <div className="flex items-end justify-between mt-2">
+            <span className="text-2xl font-black text-slate-800">{stats.agendado.count}</span>
+            <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md">{stats.agendado.percent}%</span>
+          </div>
+        </div>
+        <div onClick={() => onCardClick && onCardClick('tratar')} className={`bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border p-4 border-l-4 border-l-yellow-400 flex flex-col justify-between hover:scale-[1.02] transition-all cursor-pointer ${activeStatusKey === 'tratar' ? 'ring-2 ring-yellow-400 bg-yellow-50/50' : 'border-slate-100'}`}>
+          <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">Tratar</span>
+          <div className="flex items-end justify-between mt-2">
+            <span className="text-2xl font-black text-slate-800">{stats.tratar.count}</span>
+            <span className="text-[10px] font-bold text-yellow-700 bg-yellow-50 px-2 py-1 rounded-md">{stats.tratar.percent}%</span>
+          </div>
+        </div>
+        <div onClick={() => onCardClick && onCardClick('fechado')} className={`bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border p-4 border-l-4 border-l-red-500 flex flex-col justify-between hover:scale-[1.02] transition-all cursor-pointer ${activeStatusKey === 'fechado' ? 'ring-2 ring-red-500 bg-red-50/50' : 'border-slate-100'}`}>
+          <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">Fechado</span>
+          <div className="flex items-end justify-between mt-2">
+            <span className="text-2xl font-black text-slate-800">{stats.fechado.count}</span>
+            <span className="text-[10px] font-bold text-red-600 bg-red-50 px-2 py-1 rounded-md">{stats.fechado.percent}%</span>
+          </div>
+        </div>
+        <div onClick={() => onCardClick && onCardClick('tecnico')} className={`bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border p-4 border-l-4 border-l-orange-500 flex flex-col justify-between hover:scale-[1.02] transition-all cursor-pointer ${activeStatusKey === 'tecnico' ? 'ring-2 ring-orange-500 bg-orange-50/50' : 'border-slate-100'}`}>
+          <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">Técnico</span>
+          <div className="flex items-end justify-between mt-2">
+            <span className="text-2xl font-black text-slate-800">{stats.tecnico.count}</span>
+            <span className="text-[10px] font-bold text-orange-600 bg-orange-50 px-2 py-1 rounded-md">{stats.tecnico.percent}%</span>
+          </div>
+        </div>
+      </div>
+    );
+
+    const TeamCardsSection = ({ data }) => {
+      const teamStats = useMemo(() => {
+        const map = {};
+        data.forEach(item => {
+          const eq = item.equipe || 'Sem Equipe';
+          if (!map[eq]) {
+            map[eq] = { equipe: eq, total: 0, instalado: 0, agendado: 0, tratar: 0, fechado: 0, tecnico: 0 };
+          }
+          map[eq].total++;
+          const key = getStatusKey(item.statusAgendamento || item.status);
+          if (map[eq][key] !== undefined) map[eq][key]++;
+        });
+        return Object.values(map).sort((a, b) => b.total - a.total).map(t => ({
+          ...t,
+          instaladoPct: t.total > 0 ? ((t.instalado / t.total) * 100).toFixed(1) : '0.0',
+          agendadoPct:  t.total > 0 ? ((t.agendado / t.total) * 100).toFixed(1) : '0.0',
+          tratarPct:    t.total > 0 ? ((t.tratar / t.total) * 100).toFixed(1) : '0.0',
+          fechadoPct:   t.total > 0 ? ((t.fechado / t.total) * 100).toFixed(1) : '0.0',
+          tecnicoPct:   t.total > 0 ? ((t.tecnico / t.total) * 100).toFixed(1) : '0.0',
+        }));
+      }, [data]);
+
+      if (teamStats.length === 0) return null;
+
+      const StatusLine = ({ label, colorClass, count, pct }) => (
+        <div className="flex justify-between items-center text-[10px] py-1 border-b border-slate-100 last:border-0 w-full px-1">
+          <span className="flex items-center gap-1.5 font-medium text-slate-600">
+            <span className={`w-2 h-2 rounded-full ${colorClass}`}></span> {label}
+          </span>
+          <div className="text-right">
+            <span className="font-bold text-slate-800">{count}</span>
+            <span className="text-[9px] font-bold text-slate-400 ml-1">({pct}%)</span>
+          </div>
+        </div>
+      );
+
+      return (
+        <div className="bg-white rounded-[1.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 p-4 md:p-5 flex flex-col h-full">
+          <h3 className="font-bold text-slate-700 uppercase tracking-widest text-xs mb-4 flex items-center gap-2">
+            <Icon name="layout-grid" className="w-4 h-4 text-emerald-500" /> Desempenho por Equipe
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+            {teamStats.map(team => (
+              <div key={team.equipe} className="bg-slate-50/70 rounded-xl border border-slate-200/80 p-3 hover:scale-[1.01] transition-transform shadow-2xs flex flex-col items-center text-center">
+                <h4 className="font-bold text-slate-800 text-[11px] uppercase tracking-wider truncate w-full px-1" title={team.equipe}>{team.equipe}</h4>
+                <span className="bg-slate-800 text-white px-2 py-0.5 rounded text-[9px] font-black tracking-widest mt-1 mb-2">{team.total} VENDAS</span>
+                <div className="w-full flex flex-col gap-0.5 mt-0.5">
+                  <StatusLine label="Instaladas" colorClass={STATUS_COLORS.instalado.dot} count={team.instalado} pct={team.instaladoPct} />
+                  <StatusLine label="Agendadas" colorClass={STATUS_COLORS.agendado.dot} count={team.agendado} pct={team.agendadoPct} />
+                  <StatusLine label="Tratar" colorClass={STATUS_COLORS.tratar.dot} count={team.tratar} pct={team.tratarPct} />
+                  <StatusLine label="Fechado" colorClass={STATUS_COLORS.fechado.dot} count={team.fechado} pct={team.fechadoPct} />
+                  <StatusLine label="Técnico" colorClass={STATUS_COLORS.tecnico.dot} count={team.tecnico} pct={team.tecnicoPct} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    };
+
+    const VendorTable = ({ data }) => {
+      const [sortConfig, setSortConfig] = useState({ key: 'total', direction: 'desc' });
+
+      const vendorStats = useMemo(() => {
+        const map = {};
+        data.forEach(item => {
+          const v = item.vendedor || 'Não Identificado';
+          if (v.trim().toUpperCase() === 'GLOBAL') return;
+          if (!map[v]) {
+            map[v] = { vendedor: v, total: 0, mixHighCount: 0, instalado: 0, agendado: 0, tratar: 0, fechado: 0, tecnico: 0 };
+          }
+          map[v].total++;
+          const p = String(item.plano || '').trim();
+          const isHigh = (
+            p === 'NIO - Super 800 MB' ||
+            p === 'NIO - Ultra 1 GB' ||
+            p === 'NIO - Ultra 1 GB | ADICIONAIS - FIXO' ||
+            p === 'NIO - Super 800 MB | ADICIONAIS - FIXO' ||
+            p === 'NIO - Super 700 MB'
+          );
+          if (isHigh) map[v].mixHighCount++;
+
+          const key = getStatusKey(item.statusAgendamento || item.status);
+          if (map[v][key] !== undefined) map[v][key]++;
+        });
+
+        return Object.values(map).map(v => ({
+          ...v,
+          percMixHigh: v.total > 0 ? ((v.mixHighCount / v.total) * 100).toFixed(1) : '0.0',
+          instaladoPct: v.total > 0 ? Number(((v.instalado / v.total) * 100).toFixed(1)) : 0,
+          agendadoPct:  v.total > 0 ? Number(((v.agendado / v.total) * 100).toFixed(1)) : 0,
+          tratarPct:    v.total > 0 ? Number(((v.tratar / v.total) * 100).toFixed(1)) : 0,
+          fechadoPct:   v.total > 0 ? Number(((v.fechado / v.total) * 100).toFixed(1)) : 0,
+          tecnicoPct:   v.total > 0 ? Number(((v.tecnico / v.total) * 100).toFixed(1)) : 0,
+        }));
+      }, [data]);
+
+      const sortedVendors = useMemo(() => {
+        const sorted = [...vendorStats];
+        sorted.sort((a, b) => {
+          let valA = a[sortConfig.key];
+          let valB = b[sortConfig.key];
+          if (typeof valA === 'string') {
+            return sortConfig.direction === 'asc' ? valA.localeCompare(valB, 'pt-BR') : valB.localeCompare(valA, 'pt-BR');
+          }
+          return sortConfig.direction === 'asc' ? valA - valB : valB - valA;
+        });
+        return sorted;
+      }, [vendorStats, sortConfig]);
+
+      const handleSort = (key) => {
+        setSortConfig(prev => ({
+          key,
+          direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+        }));
+      };
+
+      const renderSortIcon = (key) => {
+        if (sortConfig.key !== key) return <Icon name="chevrons-up-down" className="w-3.5 h-3.5 text-slate-300 ml-1 inline" />;
+        return sortConfig.direction === 'asc' 
+          ? <Icon name="arrow-up" className="w-3.5 h-3.5 text-emerald-500 ml-1 inline" />
+          : <Icon name="arrow-down" className="w-3.5 h-3.5 text-emerald-500 ml-1 inline" />;
+      };
+
+      return (
+        <div className="bg-white rounded-[1.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 overflow-hidden flex flex-col mt-6">
+          <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+            <h3 className="font-bold text-slate-700 uppercase tracking-widest text-xs flex items-center gap-2">
+              <Icon name="users" className="w-4 h-4 text-emerald-500" />
+              Desempenho por Vendedor
+            </h3>
+            <span className="text-xs text-slate-400 font-medium">{sortedVendors.length} Vendedores</span>
+          </div>
+
+          <div className="overflow-x-auto custom-scrollbar max-h-[500px]">
+            <table className="w-full text-center border-collapse min-w-[900px]">
+              <thead className="bg-slate-50 border-b border-slate-200 sticky top-0 z-10 shadow-sm text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                <tr>
+                  <th onClick={() => handleSort('vendedor')} className="px-5 py-4 cursor-pointer hover:text-slate-700 transition-colors text-center">Vendedor {renderSortIcon('vendedor')}</th>
+                  <th onClick={() => handleSort('total')} className="px-5 py-4 cursor-pointer hover:text-slate-700 transition-colors text-center">Total Vendas {renderSortIcon('total')}</th>
+                  <th onClick={() => handleSort('instalado')} className="px-5 py-4 cursor-pointer hover:text-slate-700 transition-colors text-center">Instalados / % {renderSortIcon('instalado')}</th>
+                  <th onClick={() => handleSort('agendado')} className="px-5 py-4 cursor-pointer hover:text-slate-700 transition-colors text-center">Agendados / % {renderSortIcon('agendado')}</th>
+                  <th onClick={() => handleSort('tratar')} className="px-5 py-4 cursor-pointer hover:text-slate-700 transition-colors text-center">Tratar / % {renderSortIcon('tratar')}</th>
+                  <th onClick={() => handleSort('fechado')} className="px-5 py-4 cursor-pointer hover:text-slate-700 transition-colors text-center">Fechado / % {renderSortIcon('fechado')}</th>
+                  <th onClick={() => handleSort('tecnico')} className="px-5 py-4 cursor-pointer hover:text-slate-700 transition-colors text-center">Técnico / % {renderSortIcon('tecnico')}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-sm">
+                {sortedVendors.map((v) => (
+                  <tr key={v.vendedor} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-5 py-3.5 font-bold text-slate-700 text-center">{v.vendedor}</td>
+                    <td className="px-5 py-3.5 font-black text-slate-800 text-center">{v.total}</td>
+                    <td className="px-5 py-3.5 text-center font-medium">
+                      <div className="flex items-center justify-center">
+                        <span className="text-emerald-700 font-bold">{v.instalado}</span>
+                        <span className="text-xs text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded ml-1 font-bold w-12">{v.instaladoPct}%</span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-3.5 text-center font-medium">
+                      <div className="flex items-center justify-center">
+                        <span className="text-blue-700 font-bold">{v.agendado}</span>
+                        <span className="text-xs text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded ml-1 font-bold w-12">{v.agendadoPct}%</span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-3.5 text-center font-medium">
+                      <div className="flex items-center justify-center">
+                        <span className="text-yellow-700 font-bold">{v.tratar}</span>
+                        <span className="text-xs text-yellow-700 bg-yellow-50 px-1.5 py-0.5 rounded ml-1 font-bold w-12">{v.tratarPct}%</span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-3.5 text-center font-medium">
+                      <div className="flex items-center justify-center">
+                        <span className="text-red-700 font-bold">{v.fechado}</span>
+                        <span className="text-xs text-red-600 bg-red-50 px-1.5 py-0.5 rounded ml-1 font-bold w-12">{v.fechadoPct}%</span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-3.5 text-center font-medium">
+                      <div className="flex items-center justify-center">
+                        <span className="text-orange-700 font-bold">{v.tecnico}</span>
+                        <span className="text-xs text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded ml-1 font-bold w-12">{v.tecnicoPct}%</span>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      );
+    };
+
+    function App() {
+      // 1. ESTADOS PRINCIPAIS
+      const [activeTab, setActiveTab] = useState('capa');
+      const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
+      
+      const [eficaciaSubTab, setEficaciaSubTab] = useState('dashboard');
+      const [eficaciaDataSource, setEficaciaDataSource] = useState('atual');
+
+      const [salesData, setSalesData] = useState([]);
+      const [previousMonthSalesData, setPreviousMonthSalesData] = useState([]);
+      const [churnData, setChurnData] = useState([]);
+      const [fpdData, setFpdData] = useState([]);
+      const [cancelamentoData, setCancelamentoData] = useState([]);
+      const [qualidadeData, setQualidadeData] = useState([]);
+
+      const [searchTerm, setSearchTerm] = useState('');
+      const [selectedTeamFilter, setSelectedTeamFilter] = useState('TODAS');
+      const [selectedSellerFilter, setSelectedSellerFilter] = useState('TODOS');
+      
+      const [quartilFilter, setQuartilFilter] = useState('TODOS');
+      const [tendenciaFilter, setTendenciaFilter] = useState('TODAS');
+
+      // ESTADOS DE PROCESSOS (Eficácia)
+      const [showFilters, setShowFilters] = useState(true);
+      const [filterEquipe, setFilterEquipe] = useState('TODAS');
+      const [filterStatus, setFilterStatus] = useState('TODOS');
+      const [filterCardStatusKey, setFilterCardStatusKey] = useState('TODOS');
+      const [filterVendedor, setFilterVendedor] = useState('TODOS');
+      const [filterTurno, setFilterTurno] = useState('TODOS');
+      const [filterDataVendaInicio, setFilterDataVendaInicio] = useState('');
+      const [filterDataVendaFim, setFilterDataVendaFim] = useState('');
+      const [filterDataAgendInicio, setFilterDataAgendInicio] = useState('');
+      const [filterDataAgendFim, setFilterDataAgendFim] = useState('');
+
+      const [processSearchText, setProcessSearchText] = useState('');
+      const [processSortConfig, setProcessSortConfig] = useState({ key: '', direction: 'asc' });
+      const [processItemsPerPage, setProcessItemsPerPage] = useState(50);
+      const [selectedSaleDetails, setSelectedSaleDetails] = useState(null);
+      const [processCurrentPage, setProcessCurrentPage] = useState(1);
+
+      // ESTADOS DE CONFIGURAÇÕES E METAS
+      const [metaLoja, setMetaLoja] = useState(450);
+      const [metaIndividual, setMetaIndividual] = useState(30);
+      const [metaVendedorDia, setMetaVendedorDia] = useState(1.5);
+      const [metaEquipeDia, setMetaEquipeDia] = useState(15);
+      const [uteisTotal, setUteisTotal] = useState(22);
+      const [uteisDecorridos, setUteisDecorridos] = useState(14);
+      
+      const [semanasConfig, setSemanasConfig] = useState({
+        1: { inicio: 1, fim: 7, du: 5 },
+        2: { inicio: 8, fim: 14, du: 5 },
+        3: { inicio: 15, fim: 21, du: 5 },
+        4: { inicio: 22, fim: 28, du: 5 },
+        5: { inicio: 29, fim: 31, du: 2 }
+      });
+
+      const [metasEquipeMap, setMetasEquipeMap] = useState({});
+      const [metasVendedorMap, setMetasVendedorMap] = useState({});
+      const [configEquipeSel, setConfigEquipeSel] = useState('TODAS');
+      const [configVendedorSel, setConfigVendedorSel] = useState('TODOS');
+      const [senhaGestor, setSenhaGestor] = useState('1234');
+      const [inputSenha, setInputSenha] = useState('');
+      const [isMetasAutenticado, setIsMetasAutenticado] = useState(false);
+      const [isFinanceiroAutenticado, setIsFinanceiroAutenticado] = useState(false);
+      const [inputSenhaFinanceiro, setInputSenhaFinanceiro] = useState('');
+
+      const [toastMessage, setToastMessage] = useState('');
+      const [toastType, setToastType] = useState('success');
+
+      // 2. REFERÊNCIAS
+      const activeTabRef = useRef(activeTab);
+      useEffect(() => { activeTabRef.current = activeTab; }, [activeTab]);
+      const isConfigLoadedRef = useRef(false);
+
+      const canvasVendasDiaRef = useRef(null);
+      const canvasEquipesRef = useRef(null);
+      const canvasMixHighRef = useRef(null);
+      const canvasQualidadeRef = useRef(null);
+      const chartInstancesRef = useRef({});
+
+      // Utilitário de Notificação
+      const showToast = (msg, type = 'success') => {
+        setToastMessage(msg);
+        setToastType(type);
+        setTimeout(() => setToastMessage(''), 8000);
+      };
+
+      const clearAllProcessFilters = () => {
+        setFilterEquipe('TODAS');
+        setFilterStatus('TODOS');
+        setFilterCardStatusKey('TODOS');
+        setFilterVendedor('TODOS');
+        setFilterTurno('TODOS');
+        setFilterDataVendaInicio('');
+        setFilterDataVendaFim('');
+        setFilterDataAgendInicio('');
+        setFilterDataAgendFim('');
+        setProcessSearchText('');
+      };
+
+      // 3. EFEITOS (Fetch e Sincronização)
+      useEffect(() => {
+        const handleResize = () => {
+          if (window.innerWidth <= 768) setIsSidebarOpen(false);
+          else setIsSidebarOpen(true);
+        };
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+      }, []);
+
+      const fetchConfigs = async (isSilent = false) => {
+        if (!isSilent) showToast('A sincronizar com a Nuvem...', 'success');
+        let json = null;
+        
+        if (supabase) {
+          try {
+            const { data: dbData } = await supabase.from('configuracoes').select('*').eq('id', 1).single();
+            if (dbData && dbData.configuracao) {
+                json = dbData.configuracao;
+            }
+          } catch (e) {
+             console.log('Falha ao procurar tabela configuracoes...');
+          }
+          if (!json) {
+            try {
+              const { data } = await supabase.storage.from(BUCKET_NAME).download('configs/settings.json');
+              if (data) json = JSON.parse(await data.text());
+            } catch (e) {}
+          }
+        }
+
+        if (!json) {
+          const localData = localStorage.getItem('lightBiConfigs');
+          if (localData) { try { json = JSON.parse(localData); } catch (e) {} }
+        }
+
+        if (json) {
+          const isEditing = document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'SELECT');
+          if (isSilent && activeTabRef.current === 'metas' && isEditing) {
+             // Evita sobrepor enquanto o gestor digita
+          } else {
+            isConfigLoadedRef.current = false;
+            if (json.metaLoja !== undefined) setMetaLoja(json.metaLoja);
+            if (json.uteisTotal !== undefined) setUteisTotal(json.uteisTotal);
+            if (json.uteisDecorridos !== undefined) setUteisDecorridos(json.uteisDecorridos);
+            if (json.senhaGestor !== undefined) setSenhaGestor(json.senhaGestor);
+            if (json.semanasConfig !== undefined) setSemanasConfig(json.semanasConfig);
+            if (json.metasEquipeMap !== undefined) setMetasEquipeMap(json.metasEquipeMap);
+            if (json.metasVendedorMap !== undefined) setMetasVendedorMap(json.metasVendedorMap);
+            setTimeout(() => { isConfigLoadedRef.current = true; }, 1000);
+          }
+        }
+
+        if (!isSilent) {
+            const filesToFetch = [
+              { key: 'vendas_atual', setter: setSalesData, localKey: 'lightBiVendasAtual' },
+              { key: 'vendas_anterior', setter: setPreviousMonthSalesData, localKey: 'lightBiVendasAnterior' },
+              { key: 'churn', setter: setChurnData, localKey: 'lightBi_churn' },
+              { key: 'fpd', setter: setFpdData, localKey: 'lightBi_fpd' },
+              { key: 'cancelamento', setter: setCancelamentoData, localKey: 'lightBi_cancelamento' },
+              { key: 'qualidade', setter: setQualidadeData, localKey: 'lightBi_qualidade' }
+            ];
+
+            for (const file of filesToFetch) {
+              let parsed = null;
+              if (supabase) {
+                try {
+                  const { data } = await supabase.storage.from(BUCKET_NAME).download(`configs/${file.key}.json`);
+                  if (data) parsed = JSON.parse(await data.text());
+                } catch(e) {}
+              }
+              if (!parsed) {
+                const loc = localStorage.getItem(file.localKey);
+                if (loc) { try { parsed = JSON.parse(loc); } catch(e){} }
+              }
+              if (parsed && parsed.length > 0) file.setter(parsed);
+            }
+        }
+      };
+
+      useEffect(() => {
+        fetchConfigs();
+
+        let pollingInterval;
+        let configsChannel;
+        let storageChannel;
+
+        // Prevenção de SecurityError: Bloqueia WebSockets dentro do Canvas/Iframe
+        const isCanvasPreview = window !== window.parent || window.location.hostname === '' || window.location.hostname.includes('sandbox');
+
+        if (isCanvasPreview) {
+          console.warn("Ambiente restrito detetado. WebSockets desligados. A utilizar Polling (15s).");
+          pollingInterval = setInterval(() => { fetchConfigs(true); }, 15000);
+        } else if (supabase) {
+          try {
+            configsChannel = supabase
+              .channel('public:configuracoes')
+              .on('postgres_changes', { event: '*', schema: 'public', table: 'configuracoes' }, () => fetchConfigs(true))
+              .subscribe();
+
+            storageChannel = supabase
+              .channel('storage:objects')
+              .on('postgres_changes', { event: '*', schema: 'storage', table: 'objects' }, () => fetchConfigs(true))
+              .subscribe();
+          } catch (err) {
+             console.error("Falha ao iniciar canais do Supabase:", err);
+          }
+          pollingInterval = setInterval(() => { fetchConfigs(true); }, 15000);
+        }
+
+        return () => {
+          if (pollingInterval) clearInterval(pollingInterval);
+          if (supabase) {
+            try {
+               if (configsChannel) supabase.removeChannel(configsChannel);
+               if (storageChannel) supabase.removeChannel(storageChannel);
+            } catch(e) {}
+          }
+        };
+      }, []);
+
+      // 4. MÉTODOS DE AÇÃO (UPLOAD E SALVAR)
+      const salvarConfiguracoesGerais = async () => {
+        showToast('A enviar para a Nuvem...', 'success');
+        const payload = { metaLoja, uteisTotal, uteisDecorridos, senhaGestor, semanasConfig, metasEquipeMap, metasVendedorMap };
+        
+        let sucessoStorage = false;
+        let sucessoDB = false;
+        let mensagensErro = '';
+
+        if (supabase) {
+          try {
+            const { error } = await supabase.from('configuracoes').upsert({ id: 1, configuracao: payload });
+            if (error) throw error;
+            sucessoDB = true;
+          } catch(e) { mensagensErro += `DB: ${e.message || 'Erro'}. `; }
+
+          try {
+            const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+            const { error } = await supabase.storage.from(BUCKET_NAME).upload('configs/settings.json', blob, { upsert: true, contentType: 'application/json' });
+            if (error) throw error;
+            sucessoStorage = true;
+          } catch(e) { mensagensErro += `Storage: ${e.message || 'Erro'}.`; }
+        }
+
+        if (sucessoStorage || sucessoDB) {
+           showToast('Configurações gravadas e sincronizadas com sucesso para todos (Real-Time ativo)!');
+        } else {
+           showToast(`Erro na Nuvem. Apenas gravado localmente. (${mensagensErro})`, 'error');
+        }
+        localStorage.setItem('lightBiConfigs', JSON.stringify(payload));
+      };
+
+      const isInvalidClient = (clienteNome) => {
+        if (!clienteNome) return false;
+        const normalized = String(clienteNome).trim().toLowerCase();
+        return normalized.includes('não identificado') || normalized.includes('nao identificado') || normalized === '';
+      };
+
+      const handleSpecificCsvUpload = async (event, dataType) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          try {
+            const data = new Uint8Array(e.target.result);
+            if (window.XLSX) {
+              const workbook = window.XLSX.read(data, { type: 'array', cellDates: true });
+              const rows = window.XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1, raw: false, defval: '' });
+              if (!rows || rows.length < 2) { showToast('Ficheiro vazio.', 'error'); return; }
+
+              const parsed = [];
+              for (let i = 1; i < rows.length; i++) {
+                const cols = rows[i];
+                if (!cols || cols.length === 0 || cols.join('').trim() === '') continue;
+                parsed.push({
+                  id: i, col1: cols[0] || '-', col2: cols[1] || '-', col3: cols[2] || '-', col4: cols[3] || '-', col5: cols[4] || '-', raw: cols
+                });
+              }
+
+              if (parsed.length > 0) {
+                if (dataType === 'churn') setChurnData(parsed);
+                if (dataType === 'fpd') setFpdData(parsed);
+                if (dataType === 'cancelamento') setCancelamentoData(parsed);
+                if (dataType === 'qualidade') setQualidadeData(parsed);
+                
+                localStorage.setItem(`lightBi_${dataType}`, JSON.stringify(parsed));
+                
+                if (supabase) {
+                  try {
+                    const blob = new Blob([JSON.stringify(parsed)], { type: 'application/json' });
+                    await supabase.storage.from(BUCKET_NAME).upload(`configs/${dataType}.json`, blob, { upsert: true, contentType: 'application/json' });
+                  } catch(err) { console.log('Envio Supabase bloqueado', err); }
+                }
+                showToast(`${parsed.length} registos processados!`);
+              }
+            }
+          } catch (err) { showToast('Erro ao ler ficheiro.', 'error'); }
+          event.target.value = '';
+        };
+        reader.readAsArrayBuffer(file);
+      };
+
+      const handleCsvUpload = async (event, type = 'atual') => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          try {
+            const data = new Uint8Array(e.target.result);
+            if (window.XLSX) {
+              const workbook = window.XLSX.read(data, { type: 'array', cellDates: true });
+              const rows = window.XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1, raw: false, defval: '' });
+              if (!rows || rows.length < 2) { showToast('Ficheiro vazio.', 'error'); return; }
+
+              const normalize = (s) => String(s || '').trim().toLowerCase();
+              let headerIdx = -1;
+              let headers = [];
+
+              for (let i = 0; i < Math.min(20, rows.length); i++) {
+                const temp = (rows[i] || []).map(normalize);
+                if (temp.some(h => h.includes('vendedor') || h.includes('equipe') || h.includes('cliente') || h.includes('data venda'))) {
+                  headers = temp; headerIdx = i; break;
+                }
+              }
+              if (headerIdx === -1) { headers = (rows[0] || []).map(normalize); headerIdx = 0; }
+
+              let idxCliente = -1, idxVendedor = -1, idxEquipe = -1, idxPlano = -1, idxValor = -1, idxStatus = -1, idxDataVenda = -1;
+              let idxCpf = -1, idxCidade = -1, idxOs = -1, idxTurno = -1, idxTelefone = -1, idxObs = -1, idxDataAgendamento = -1, idxStatusAgendamento = -1;
+              let idxObsEndereco = -1, idxObsVenda = -1;
+
+              headers.forEach((h, idx) => {
+                if (h.includes('cliente') || h.includes('nome')) if (idxCliente === -1) idxCliente = idx;
+                if (h.includes('vendedor') || h.includes('consultor') || h.includes('atendente')) if (idxVendedor === -1) idxVendedor = idx;
+                if (h.includes('equipe') || h.includes('time') || h.includes('grupo')) if (idxEquipe === -1) idxEquipe = idx;
+                if (h.includes('plano') || h.includes('produto') || idx === 14) if (idxPlano === -1) idxPlano = idx;
+                if (h.includes('valor') || h.includes('preço') || h.includes('total')) if (idxValor === -1) idxValor = idx;
+                if (h.includes('status') || h.includes('situação') || idx === 38) if (idxStatus === -1 && !h.includes('agendamento')) idxStatus = idx;
+                if ((h.includes('data') && !h.includes('agendamento') && !h.includes('nasc')) || h.includes('venda inserida')) if (idxDataVenda === -1) idxDataVenda = idx;
+                if (h === 'cpf' || h.includes('documento')) if (idxCpf === -1) idxCpf = idx;
+                if (h.includes('cidade') || h.includes('endereço') || h.includes('endereco') || idx === 8) if (idxCidade === -1) idxCidade = idx;
+                if (h === 'os' || h === 'ordem de serviço') if (idxOs === -1) idxOs = idx;
+                if (h.includes('turno')) if (idxTurno === -1) idxTurno = idx;
+                if (h.includes('telefone') || h === 'celular' || idx === 4) if (idxTelefone === -1) idxTelefone = idx;
+                if (h.includes('obs endereço') || h.includes('obs endereco') || idx === 8) if (idxObsEndereco === -1) idxObsEndereco = idx;
+                if (h.includes('obs da venda') || h.includes('observação') || idx === 44) if (idxObsVenda === -1) idxObsVenda = idx;
+                if (h.includes('agendamento') && (h.includes('data') || h.includes('dt'))) if (idxDataAgendamento === -1) idxDataAgendamento = idx;
+                if (h.includes('status') && h.includes('agendamento')) if (idxStatusAgendamento === -1) idxStatusAgendamento = idx;
+              });
+
+              if (idxTelefone === -1) idxTelefone = 4;
+              if (idxObsEndereco === -1) idxObsEndereco = 8;
+              if (idxVendedor === -1) idxVendedor = 9;
+              if (idxOs === -1) idxOs = 12;
+              if (idxPlano === -1) idxPlano = 14;
+              if (idxEquipe === -1) idxEquipe = 29;
+              if (idxStatusAgendamento === -1) idxStatusAgendamento = 36;
+              if (idxTurno === -1) idxTurno = 36;
+              if (idxStatus === -1) idxStatus = 38;
+              if (idxObsVenda === -1) idxObsVenda = 44;
+
+              const parsed = [];
+              for (let i = headerIdx + 1; i < rows.length; i++) {
+                const cols = rows[i];
+                if (!cols || cols.length === 0 || cols.join('').trim() === '') continue;
+
+                let cliente = idxCliente !== -1 ? String(cols[idxCliente]).trim() : 'Cliente';
+                let vendedor = idxVendedor !== -1 && cols[idxVendedor] ? String(cols[idxVendedor]).toUpperCase().trim() : 'NÃO IDENTIFICADO';
+                let equipe = idxEquipe !== -1 && cols[idxEquipe] ? String(cols[idxEquipe]).toUpperCase().trim() : 'GERAL';
+                let plano = idxPlano !== -1 && cols[idxPlano] ? String(cols[idxPlano]).trim() : 'NIO - Ultra 1 GB';
+                let status = idxStatus !== -1 && cols[idxStatus] ? String(cols[idxStatus]).trim() : 'Instalado';
+                let statusAgendamento = idxStatusAgendamento !== -1 && cols[idxStatusAgendamento] ? String(cols[idxStatusAgendamento]).trim() : status;
+                
+                let valor = 119.90;
+                if (idxValor !== -1 && cols[idxValor]) {
+                  const vNum = parseFloat(String(cols[idxValor]).replace('R$', '').replace(/\./g, '').replace(',', '.').trim());
+                  if (!isNaN(vNum) && vNum > 0) valor = vNum;
+                }
+
+                const extractDateInfo = (raw) => {
+                    if (!raw) return null;
+                    if (raw instanceof Date) {
+                        if (isNaN(raw.getTime())) return null;
+                        return {
+                            iso: `${raw.getFullYear()}-${String(raw.getMonth()+1).padStart(2, '0')}-${String(raw.getDate()).padStart(2, '0')}`,
+                            fmt: `${String(raw.getDate()).padStart(2, '0')}/${String(raw.getMonth()+1).padStart(2, '0')}/${raw.getFullYear()}`
+                        };
+                    }
+                    let str = String(raw).trim();
+                    if (/^\d{5}(\.\d+)?$/.test(str) && Number(str) > 20000) {
+                        const d = new Date((Number(str) - (25567 + 2)) * 86400 * 1000);
+                        return {
+                            iso: `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
+                            fmt: `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth()+1).padStart(2, '0')}/${d.getFullYear()}`
+                        };
+                    }
+                    if (str.includes('T')) str = str.split('T')[0];
+                    if (str.includes(' ')) str = str.split(' ')[0];
+                    const parts = str.split(/[\/-]/);
+                    if (parts.length === 3) {
+                        if (parts[0].length === 4) {
+                            return {
+                                iso: `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`,
+                                fmt: `${parts[2].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[0]}`
+                            };
+                        } else {
+                            let year = parts[2];
+                            if (year.length === 2) year = '20' + year;
+                            return {
+                                iso: `${year}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`,
+                                fmt: `${parts[0].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${year}`
+                            };
+                        }
+                    }
+                    return null;
+                };
+
+                let dataIso = '';
+                let dataVendaFormatada = '';
+                if (idxDataVenda !== -1 && cols[idxDataVenda]) {
+                    const parsedDt = extractDateInfo(cols[idxDataVenda]);
+                    if (parsedDt) { dataIso = parsedDt.iso; dataVendaFormatada = parsedDt.fmt; }
+                }
+                if (!dataIso) {
+                    for (let j = 0; j < cols.length; j++) {
+                        if (j !== idxDataAgendamento && cols[j]) {
+                            const parsedDt = extractDateInfo(cols[j]);
+                            if (parsedDt && parsedDt.iso.startsWith('202')) {
+                                dataIso = parsedDt.iso; dataVendaFormatada = parsedDt.fmt; break;
+                            }
+                        }
+                    }
+                }
+                if (!dataIso) {
+                  dataIso = new Date().toISOString().split('T')[0];
+                  dataVendaFormatada = dataIso.split('-').reverse().join('/');
+                }
+
+                let dataAgend = '';
+                if (idxDataAgendamento !== -1 && cols[idxDataAgendamento]) {
+                  const agendParsed = extractDateInfo(cols[idxDataAgendamento]);
+                  dataAgend = agendParsed ? agendParsed.fmt : formatToDDMMYYYY(cols[idxDataAgendamento]);
+                }
+
+                parsed.push({
+                  id: i, cliente, vendedor, equipe, plano, status, statusAgendamento, valor,
+                  dataVendaIso: dataIso, dataVendaFormatada,
+                  cpf: idxCpf !== -1 ? String(cols[idxCpf]).trim() : '',
+                  cidade: idxCidade !== -1 ? String(cols[idxCidade]).trim() : '',
+                  os: idxOs !== -1 && cols[idxOs] ? String(cols[idxOs]).trim() : '',
+                  turno: idxTurno !== -1 && cols[idxTurno] ? String(cols[idxTurno]).trim() : '',
+                  telefone: idxTelefone !== -1 && cols[idxTelefone] ? String(cols[idxTelefone]).trim() : '',
+                  obsEndereco: idxObsEndereco !== -1 && cols[idxObsEndereco] ? String(cols[idxObsEndereco]).trim() : '',
+                  obsVenda: idxObsVenda !== -1 && cols[idxObsVenda] ? String(cols[idxObsVenda]).trim() : '',
+                  dataAgendamento: dataAgend
+                });
+              }
+
+              if (parsed.length > 0) {
+                const fileName = type === 'anterior' ? 'vendas_anterior' : 'vendas_atual';
+                if (type === 'anterior') {
+                  setPreviousMonthSalesData(parsed);
+                  localStorage.setItem('lightBiVendasAnterior', JSON.stringify(parsed));
+                } else {
+                  setSalesData(parsed);
+                  localStorage.setItem('lightBiVendasAtual', JSON.stringify(parsed));
+                }
+
+                if (supabase) {
+                  try {
+                    const blob = new Blob([JSON.stringify(parsed)], { type: 'application/json' });
+                    await supabase.storage.from(BUCKET_NAME).upload(`configs/${fileName}.json`, blob, { upsert: true, contentType: 'application/json' });
+                  } catch(e) { console.log('Envio bloqueado', e); }
+                }
+                showToast(`${parsed.length} vendas gravadas e sincronizadas!`, 'success');
+              }
+            }
+          } catch (err) { showToast('Erro ao ler ficheiro CSV.', 'error'); }
+          event.target.value = '';
+        };
+        reader.readAsArrayBuffer(file);
+      };
+
+      const handleSemanaChange = (semana, campo, valor) => setSemanasConfig(prev => ({ ...prev, [semana]: { ...prev[semana], [campo]: valor } }));
+      const handleSaveMetasEquipe = (team, field, value) => setMetasEquipeMap(prev => ({ ...prev, [team]: { ...(prev[team] || {}), [field]: Number(value) } }));
+      const handleSaveMetasVendedor = (seller, field, value) => setMetasVendedorMap(prev => ({ ...prev, [seller]: { ...(prev[seller] || {}), [field]: Number(value) } }));
+
+      // 5. CÁLCULOS (MEMOS)
+      const validSales = useMemo(() => salesData.filter(item => !isInvalidClient(item.cliente)), [salesData]);
+      const validPreviousSales = useMemo(() => previousMonthSalesData.filter(item => !isInvalidClient(item.cliente)), [previousMonthSalesData]);
+
+      const dashboardFilteredSales = useMemo(() => {
+        let list = validSales;
+        if (selectedTeamFilter !== 'TODAS') list = list.filter(v => v.equipe === selectedTeamFilter);
+        if (selectedSellerFilter !== 'TODOS') list = list.filter(v => v.vendedor === selectedSellerFilter);
+        return list;
+      }, [validSales, selectedTeamFilter, selectedSellerFilter]);
+
+      const dashboardFilteredPreviousSales = useMemo(() => {
+        let list = validPreviousSales;
+        if (selectedTeamFilter !== 'TODAS') list = list.filter(v => v.equipe === selectedTeamFilter);
+        if (selectedSellerFilter !== 'TODOS') list = list.filter(v => v.vendedor === selectedSellerFilter);
+        return list;
+      }, [validPreviousSales, selectedTeamFilter, selectedSellerFilter]);
+
+      const availableSellers = useMemo(() => {
+        const sellers = new Set();
+        validSales.forEach(v => {
+          if (v.equipe?.toUpperCase().includes('LOJA')) return;
+          if (selectedTeamFilter === 'TODAS' || v.equipe === selectedTeamFilter) {
+            if (v.vendedor) sellers.add(v.vendedor);
+          }
+        });
+        return Array.from(sellers).sort();
+      }, [validSales, selectedTeamFilter]);
+
+      const availableTeams = useMemo(() => {
+        const equipes = new Set();
+        validSales.forEach(v => { if (v.equipe) equipes.add(v.equipe); });
+        return Array.from(equipes).sort();
+      }, [validSales]);
+
+      const semanas = [1, 2, 3, 4, 5];
+      const weeksDays = { 
+        1: semanasConfig[1]?.du ?? 5, 2: semanasConfig[2]?.du ?? 5, 3: semanasConfig[3]?.du ?? 5, 4: semanasConfig[4]?.du ?? 5, 5: semanasConfig[5]?.du ?? 2 
+      };
+
+      const weeklyData = useMemo(() => {
+        const equipesMap = {};
+        const vendedoresMap = {};
+
+        validSales.forEach(sale => {
+          if (selectedTeamFilter !== 'TODAS' && sale.equipe !== selectedTeamFilter) return;
+          if (selectedSellerFilter !== 'TODOS' && sale.vendedor !== selectedSellerFilter) return;
+
+          const eq = sale.equipe || 'Sem Equipe';
+          const vend = sale.vendedor || 'Não Identificado';
+          const isLoja = eq.toUpperCase().includes('LOJA');
+
+          if (!equipesMap[eq]) equipesMap[eq] = { equipe: eq, isLoja, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+          if (!isLoja && !vendedoresMap[vend]) vendedoresMap[vend] = { vendedor: vend, equipe: eq, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+
+          if (sale.dataVendaIso) {
+            const d = parseInt(sale.dataVendaIso.split('-')[2], 10);
+            if (!isNaN(d)) {
+              for (let w = 1; w <= 5; w++) {
+                const cfg = semanasConfig[w] || { inicio: 0, fim: 0 };
+                if (d >= cfg.inicio && d <= cfg.fim) {
+                  equipesMap[eq][w]++;
+                  if (!isLoja && vendedoresMap[vend]) vendedoresMap[vend][w]++;
+                  break;
+                }
+              }
+            }
+          }
+        });
+
+        return {
+          equipes: Object.values(equipesMap).sort((a, b) => a.equipe.localeCompare(b.equipe)),
+          vendedores: Object.values(vendedoresMap).sort((a, b) => a.vendedor.localeCompare(b.vendedor))
+        };
+      }, [validSales, selectedTeamFilter, selectedSellerFilter, semanasConfig]);
+
+      const weeklyMetrics = useMemo(() => {
+        const metrics = { S1: 0, S2: 0, S3: 0, S4: 0, S5: 0 };
+        weeklyData.equipes.forEach(eq => { metrics.S1 += eq[1]; metrics.S2 += eq[2]; metrics.S3 += eq[3]; metrics.S4 += eq[4]; metrics.S5 += eq[5]; });
+        return metrics;
+      }, [weeklyData.equipes]);
+
+      const weekLabels = [1, 2, 3, 4, 5].map(w => {
+        const cfg = semanasConfig[w];
+        if (!cfg || (cfg.inicio === 0 && cfg.fim === 0)) return 'Desativada';
+        return `Dias ${String(cfg.inicio).padStart(2, '0')} ao ${String(cfg.fim).padStart(2, '0')}`;
+      });
+
+      const rankingVendedores = useMemo(() => {
+        const map = {};
+        validSales.forEach(sale => {
+          if (sale.equipe?.toUpperCase().includes('LOJA')) return;
+          if (selectedTeamFilter !== 'TODAS' && sale.equipe !== selectedTeamFilter) return;
+          const v = sale.vendedor || 'Não Identificado';
+          if (!map[v]) map[v] = { vendedor: v, equipe: sale.equipe || '-', total: 0, mixHighCount: 0, valorTotal: 0, instaladas: 0, qtdVendasAnterior: 0 };
+          map[v].total++;
+          map[v].valorTotal += Number(sale.valor) || 0;
+          
+          const p = String(sale.plano || '').trim();
+          const isHigh = (p === 'NIO - Super 800 MB' || p === 'NIO - Ultra 1 GB' || p === 'NIO - Ultra 1 GB | ADICIONAIS - FIXO' || p === 'NIO - Super 800 MB | ADICIONAIS - FIXO' || p === 'NIO - Super 700 MB');
+          if (isHigh) map[v].mixHighCount++;
+
+          if (sale.status === 'Instalado' || getStatusKey(sale.status) === 'instalado') map[v].instaladas++;
+        });
+
+        validPreviousSales.forEach(sale => {
+          if (sale.equipe?.toUpperCase().includes('LOJA')) return;
+          if (selectedTeamFilter !== 'TODAS' && sale.equipe !== selectedTeamFilter) return;
+          const v = sale.vendedor || 'Não Identificado';
+          if (!map[v]) map[v] = { vendedor: v, equipe: sale.equipe || '-', total: 0, mixHighCount: 0, valorTotal: 0, instaladas: 0, qtdVendasAnterior: 0 };
+          map[v].qtdVendasAnterior++;
+        });
+
+        const uDecorridos = Number(uteisDecorridos) > 0 ? Number(uteisDecorridos) : 1;
+        const uTotal = Number(uteisTotal) > 0 ? Number(uteisTotal) : 1;
+
+        return Object.values(map)
+          .filter(s => s.total > 0)
+          .filter(s => s.vendedor.toLowerCase().includes(searchTerm.toLowerCase()) || s.equipe.toLowerCase().includes(searchTerm.toLowerCase()))
+          .map(s => {
+            const duVal = s.total / uDecorridos;
+            const projecao = Math.round(duVal * uTotal);
+            const diffAnt = projecao - s.qtdVendasAnterior;
+            let prod = s.qtdVendasAnterior > 0 ? ((diffAnt / s.qtdVendasAnterior) * 100).toFixed(1) : (projecao > 0 ? 100.0 : 0);
+            const percMixHigh = s.total > 0 ? ((s.mixHighCount / s.total) * 100).toFixed(1) : '0.0';
+            return {
+              ...s,
+              du: duVal.toFixed(2),
+              percMixHigh,
+              quartil: duVal > 1.3 ? 'Q1' : duVal >= 1.0 ? 'Q2' : duVal >= 0.7 ? 'Q3' : 'Q4',
+              projecao,
+              diferencaAnterior: diffAnt,
+              produtividade: prod
+            };
+          })
+          .sort((a, b) => b.total - a.total);
+      }, [validSales, validPreviousSales, searchTerm, selectedTeamFilter, uteisDecorridos, uteisTotal]);
+
+      const tendenciaStats = useMemo(() => {
+        let emQueda = 0; let emAlta = 0;
+        rankingVendedores.forEach(s => {
+          if (s.diferencaAnterior < 0) emQueda++;
+          else if (s.diferencaAnterior >= 0) emAlta++;
+        });
+        return { emAlta, emQueda };
+      }, [rankingVendedores]);
+
+      const quartilCounts = useMemo(() => {
+        const counts = { Q1: 0, Q2: 0, Q3: 0, Q4: 0 };
+        rankingVendedores.forEach(s => { if (counts[s.quartil] !== undefined) counts[s.quartil]++; });
+        return counts;
+      }, [rankingVendedores]);
+
+      const displayedSellers = useMemo(() => {
+        let filtered = rankingVendedores;
+        if (quartilFilter !== 'TODOS') filtered = filtered.filter(s => s.quartil === quartilFilter);
+        if (tendenciaFilter === 'QUEDA') filtered = filtered.filter(s => s.diferencaAnterior < 0);
+        else if (tendenciaFilter === 'ALTA') filtered = filtered.filter(s => s.diferencaAnterior >= 0);
+        return filtered;
+      }, [rankingVendedores, quartilFilter, tendenciaFilter]);
+
+      const top3Vendedores = rankingVendedores.slice(0, 3);
+
+      const metrics = useMemo(() => {
+        const totalVendasCount = dashboardFilteredSales.length;
+        const totalFaturamento = dashboardFilteredSales.reduce((acc, curr) => acc + (Number(curr.valor) || 0), 0);
+        
+        let metaLojaCalculada = metaLoja;
+        let labelMeta = "Meta Loja";
+
+        if (selectedSellerFilter !== 'TODOS') {
+          metaLojaCalculada = metasVendedorMap[selectedSellerFilter]?.metaMes || metaIndividual;
+          labelMeta = `Meta (${selectedSellerFilter.split(' ')[0]})`;
+        } else if (selectedTeamFilter !== 'TODAS') {
+          metaLojaCalculada = metasEquipeMap[selectedTeamFilter]?.metaMes || metaLoja;
+          labelMeta = `Meta (${selectedTeamFilter})`;
+        }
+
+        const uDecorridos = Number(uteisDecorridos) > 0 ? Number(uteisDecorridos) : 1;
+        const uTotal = Number(uteisTotal) > 0 ? Number(uteisTotal) : 1;
+
+        const projecao = Math.round((totalVendasCount / uDecorridos) * uTotal);
+        const atingimento = Math.round((totalVendasCount / (Number(metaLojaCalculada) || 1)) * 100);
+        
+        let calcVendedoresUnicos = 1;
+        if (selectedSellerFilter === 'TODOS') {
+          let configVendedoresUnicos = 0;
+          if (selectedTeamFilter !== 'TODAS') {
+            configVendedoresUnicos = Number(metasEquipeMap[selectedTeamFilter]?.qtdVendedores) || 0;
+          } else {
+            const teamsPresent = new Set(dashboardFilteredSales.map(v => v.equipe));
+            teamsPresent.forEach(t => {
+              if (t && !t.toUpperCase().includes('LOJA')) {
+                 configVendedoresUnicos += (Number(metasEquipeMap[t]?.qtdVendedores) || 0);
+              }
+            });
+          }
+          const dynamicVendedoresUnicos = new Set(dashboardFilteredSales.filter(v => !v.equipe?.toUpperCase().includes('LOJA')).map(v => v.vendedor)).size || 1;
+          calcVendedoresUnicos = configVendedoresUnicos > 0 ? configVendedoresUnicos : dynamicVendedoresUnicos;
+        }
+
+        const mixHighCount = dashboardFilteredSales.filter(v => {
+          const p = String(v.plano || '').trim();
+          return (p === 'NIO - Super 800 MB' || p === 'NIO - Ultra 1 GB' || p === 'NIO - Ultra 1 GB | ADICIONAIS - FIXO' || p === 'NIO - Super 800 MB | ADICIONAIS - FIXO' || p === 'NIO - Super 700 MB');
+        }).length;
+        
+        const mixHighTotal = dashboardFilteredSales.length;
+        const mixHighPerc = mixHighTotal > 0 ? ((mixHighCount / mixHighTotal) * 100).toFixed(1) : "0.0";
+        const totalVendasMesAnterior = dashboardFilteredPreviousSales.length;
+        const diferencaVendas = projecao - totalVendasMesAnterior;
+        let percComparativo = 0;
+        if (totalVendasMesAnterior > 0) {
+          percComparativo = (((projecao - totalVendasMesAnterior) / totalVendasMesAnterior) * 100).toFixed(1);
+        } else if (projecao > 0) {
+          percComparativo = 100.0;
+        }
+
+        let metaInd = metaIndividual;
+        if (selectedSellerFilter !== 'TODOS' && metasVendedorMap[selectedSellerFilter]?.metaMes) {
+          metaInd = metasVendedorMap[selectedSellerFilter].metaMes;
+        }
+
+        return { 
+          totalVendasCount, totalFaturamento, projecao, atingimento, 
+          metaLojaUsada: metaLojaCalculada, labelMeta, 
+          vendedoresUnicos: calcVendedoresUnicos, mixHighCount, mixHighTotal, mixHighPerc, 
+          totalVendasMesAnterior, diferencaVendas, percComparativo, metaInd, uDecorridos 
+        };
+      }, [dashboardFilteredSales, dashboardFilteredPreviousSales, selectedTeamFilter, selectedSellerFilter, metasEquipeMap, metasVendedorMap, uteisDecorridos, uteisTotal, metaLoja, metaIndividual]);
+
+      const currentQuartileMetrics = useMemo(() => {
+        let vendas = metrics.totalVendasCount;
+        let vendedoresCount = metrics.vendedoresUnicos;
+        
+        const uDecorridos = Number(uteisDecorridos) > 0 ? Number(uteisDecorridos) : 1;
+        
+        const duTotal = vendas / uDecorridos;
+        const duPerSeller = vendedoresCount > 0 ? (duTotal / vendedoresCount) : 0;
+        let quartil = 'Q4';
+        let color = 'text-rose-600';
+        let bg = 'bg-rose-50 border-rose-200';
+        if (duPerSeller > 1.3) { quartil = 'Q1'; color = 'text-emerald-600'; bg = 'bg-emerald-50 border-emerald-200'; }
+        else if (duPerSeller >= 1.0) { quartil = 'Q2'; color = 'text-blue-600'; bg = 'bg-blue-50 border-blue-200'; }
+        else if (duPerSeller >= 0.7) { quartil = 'Q3'; color = 'text-amber-600'; bg = 'bg-amber-50 border-amber-200'; }
+        return { quartil, duPerSeller: duPerSeller.toFixed(2), color, bg };
+      }, [metrics, uteisDecorridos]);
+
+      const dashboardEficaciaStats = useMemo(() => {
+        const baseData = eficaciaDataSource === 'atual' ? dashboardFilteredSales : dashboardFilteredPreviousSales;
+        let list = baseData;
+        if (filterEquipe !== 'TODAS') list = list.filter(item => item.equipe === filterEquipe);
+
+        const total = list.length;
+        let instalado = 0, agendado = 0, tratar = 0, fechado = 0, tecnico = 0;
+
+        list.forEach(item => {
+          const key = getStatusKey(item.statusAgendamento || item.status);
+          if (key === 'instalado') instalado++;
+          else if (key === 'agendado') agendado++;
+          else if (key === 'tratar') tratar++;
+          else if (key === 'fechado') fechado++;
+          else if (key === 'tecnico') tecnico++;
+        });
+
+        const getPercent = (val) => total > 0 ? ((val / total) * 100).toFixed(1) : '0.0';
+
+        return {
+          total,
+          instalado: { count: instalado, percent: getPercent(instalado) },
+          agendado: { count: agendado, percent: getPercent(agendado) },
+          tratar: { count: tratar, percent: getPercent(tratar) },
+          fechado: { count: fechado, percent: getPercent(fechado) },
+          tecnico: { count: tecnico, percent: getPercent(tecnico) }
+        };
+      }, [dashboardFilteredSales, dashboardFilteredPreviousSales, eficaciaDataSource, filterEquipe]);
+
+      const eficaciaFilterOptions = useMemo(() => {
+        const equipes = new Set();
+        const statusList = new Set();
+        const vendedores = new Set();
+        const turnos = new Set();
+        const baseSales = eficaciaDataSource === 'atual' ? validSales : validPreviousSales;
+
+        baseSales.forEach(item => {
+          if (item.equipe) equipes.add(item.equipe);
+          if (item.statusAgendamento || item.status) statusList.add(item.statusAgendamento || item.status);
+          if (item.vendedor) vendedores.add(item.vendedor);
+          if (item.turno) turnos.add(item.turno);
+        });
+
+        return {
+          equipes: Array.from(equipes).sort(),
+          status: Array.from(statusList).sort(),
+          vendedores: Array.from(vendedores).sort(),
+          turnos: Array.from(turnos).sort()
+        };
+      }, [validSales, validPreviousSales, eficaciaDataSource]);
+
+      const filteredProcessData = useMemo(() => {
+        const baseSales = eficaciaDataSource === 'atual' ? validSales : validPreviousSales;
+        return baseSales.filter(item => {
+          if (filterEquipe !== 'TODAS' && item.equipe !== filterEquipe) return false;
+          const stCombinado = item.statusAgendamento || item.status || '';
+          if (filterStatus !== 'TODOS' && stCombinado !== filterStatus) return false;
+          if (filterVendedor !== 'TODOS' && item.vendedor !== filterVendedor) return false;
+          if (filterTurno !== 'TODOS' && item.turno !== filterTurno) return false;
+          if (filterCardStatusKey !== 'TODOS' && getStatusKey(stCombinado) !== filterCardStatusKey) return false;
+
+          if (filterDataVendaInicio && item.dataVendaIso && item.dataVendaIso < filterDataVendaInicio) return false;
+          if (filterDataVendaFim && item.dataVendaIso && item.dataVendaIso > filterDataVendaFim) return false;
+
+          if (filterDataAgendInicio || filterDataAgendFim) {
+            if (!item.dataAgendamento) return false;
+            const parts = item.dataAgendamento.split('/');
+            if (parts.length === 3) {
+              const isoAgend = `${parts[2]}-${parts[1]}-${parts[0]}`;
+              if (filterDataAgendInicio && isoAgend < filterDataAgendInicio) return false;
+              if (filterDataAgendFim && isoAgend > filterDataAgendFim) return false;
+            }
+          }
+          
+          if (processSearchText) {
+            const searchLower = processSearchText.toLowerCase();
+            const matchNome = (item.cliente || '').toLowerCase().includes(searchLower);
+            const matchCpf = (item.cpf || '').includes(searchLower);
+            const matchOs = (item.os || '').includes(searchLower);
+            const matchCidade = (item.cidade || '').toLowerCase().includes(searchLower);
+            if (!matchNome && !matchCpf && !matchOs && !matchCidade) return false;
+          }
+          return true;
+        });
+      }, [validSales, validPreviousSales, eficaciaDataSource, filterEquipe, filterStatus, filterCardStatusKey, filterVendedor, filterTurno, filterDataVendaInicio, filterDataVendaFim, filterDataAgendInicio, filterDataAgendFim, processSearchText]);
+
+      const sortedProcessData = useMemo(() => {
+        if (!processSortConfig.key) return filteredProcessData;
+        const sorted = [...filteredProcessData];
+        sorted.sort((a, b) => {
+          const valA = a[processSortConfig.key] || '';
+          const valB = b[processSortConfig.key] || '';
+          return processSortConfig.direction === 'asc' ? valA.localeCompare(valB, 'pt-BR') : valB.localeCompare(valA, 'pt-BR');
+        });
+        return sorted;
+      }, [filteredProcessData, processSortConfig]);
+
+      const paginatedProcessData = useMemo(() => {
+        const start = (processCurrentPage - 1) * processItemsPerPage;
+        return sortedProcessData.slice(start, start + processItemsPerPage);
+      }, [sortedProcessData, processCurrentPage, processItemsPerPage]);
+
+      // 6. EFEITO DOS GRÁFICOS (CHART.JS)
+      useEffect(() => {
+        if (!window.Chart) return;
+        Object.values(chartInstancesRef.current).forEach(c => c?.destroy());
+        chartInstancesRef.current = {};
+
+        if (activeTab === 'vendas') {
+          if (canvasVendasDiaRef.current) {
+            const vendasPorDia = {};
+            dashboardFilteredSales.forEach(v => {
+              const dt = v.dataVendaIso || '2026-06-10';
+              vendasPorDia[dt] = (vendasPorDia[dt] || 0) + 1;
+            });
+            const sortedDates = Object.keys(vendasPorDia).sort();
+            const dataDiaria = sortedDates.map(d => vendasPorDia[d]);
+            const labels = sortedDates.map(d => {
+              const parts = d.split('-');
+              return parts.length === 3 ? `${parts[2]}/${parts[1]}` : d;
+            });
+
+            chartInstancesRef.current.vendasDia = new Chart(canvasVendasDiaRef.current, {
+              type: 'line',
+              data: { labels: labels.length > 0 ? labels : ['10/06'], datasets: [{ label: 'Vendas Diárias', data: dataDiaria.length > 0 ? dataDiaria : [5], borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.15)', borderWidth: 3, fill: true, tension: 0.3 }] },
+              options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: { display: true, align: 'top', color: '#1e293b', font: { weight: 'bold', size: 10 } } }, scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } } }
+            });
+          }
+
+          if (canvasEquipesRef.current) {
+            const teamMap = {};
+            dashboardFilteredSales.forEach(v => { const eq = v.equipe || 'Geral'; teamMap[eq] = (teamMap[eq] || 0) + 1; });
+            const labels = Object.keys(teamMap);
+            const dataVals = labels.map(l => teamMap[l]);
+
+            chartInstancesRef.current.equipes = new Chart(canvasEquipesRef.current, {
+              type: 'bar',
+              data: { labels: labels.length > 0 ? labels : ['Geral'], datasets: [{ data: dataVals.length > 0 ? dataVals : [10], backgroundColor: '#10b981', borderRadius: 8 }] },
+              options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: { display: true, anchor: 'end', align: 'top', color: '#1e293b', font: { weight: 'bold', size: 11 } } }, scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } } }
+            });
+          }
+
+          if (canvasMixHighRef.current) {
+            const planCount = {};
+            dashboardFilteredSales.forEach(v => { const p = v.plano || 'Outros'; planCount[p] = (planCount[p] || 0) + 1; });
+            const planLabels = Object.keys(planCount);
+            const planValues = planLabels.map(l => planCount[l]);
+
+            chartInstancesRef.current.mixHigh = new Chart(canvasMixHighRef.current, {
+              type: 'pie',
+              data: { labels: planLabels.length > 0 ? planLabels : ['Nenhum plano'], datasets: [{ data: planValues.length > 0 ? planValues : [1], backgroundColor: CHART_PALETTE }] },
+              options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { font: { size: 10, weight: 'bold' }, usePointStyle: true } }, datalabels: { display: true, color: '#fff', font: { weight: 'bold', size: 11 }, formatter: (val) => val > 0 ? val : '' } } }
+            });
+          }
+        }
+
+        if (activeTab === 'qualidade' && canvasQualidadeRef.current) {
+          chartInstancesRef.current.qualidade = new Chart(canvasQualidadeRef.current, {
+            type: 'doughnut',
+            data: { labels: ['Aprovado', 'Em Análise', 'Reprovado'], datasets: [{ data: [qualidadeData.length > 0 ? qualidadeData.length : 85, 10, 5], backgroundColor: ['#10b981', '#3b82f6', '#ef4444'] }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+          });
+        }
+      }, [activeTab, dashboardFilteredSales, qualidadeData]);
+
+      // 7. FUNÇÕES DE RENDERIZAÇÃO DAS ABAS
+      const renderVendasTab = () => (
+        <div className="space-y-6 max-w-7xl mx-auto">
+          <div className="bg-white p-4 md:p-5 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="flex items-center gap-3 w-full md:w-auto">
+              <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center shrink-0"><Icon name="filter" className="w-5 h-5" /></div>
+              <div>
+                <h3 className="text-xs font-black uppercase tracking-wider text-slate-800">Filtro de Desempenho</h3>
+                <p className="text-[9px] font-bold text-slate-400 uppercase">Filtre o dashboard por equipe e vendedor</p>
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+              <div className="relative w-full sm:w-60">
+                <select value={selectedTeamFilter} onChange={(e) => { setSelectedTeamFilter(e.target.value); setSelectedSellerFilter('TODOS'); }} className="w-full bg-slate-50 border border-slate-200 px-5 py-3 rounded-2xl text-xs font-black text-slate-700 outline-none appearance-none pr-10 shadow-sm cursor-pointer">
+                  <option value="TODAS">TODAS AS EQUIPES</option>
+                  {availableTeams.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400"><Icon name="chevron-down" className="w-4 h-4" /></div>
+              </div>
+              <div className="relative w-full sm:w-60">
+                <select value={selectedSellerFilter} onChange={(e) => setSelectedSellerFilter(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-5 py-3 rounded-2xl text-xs font-black text-slate-700 outline-none appearance-none pr-10 shadow-sm cursor-pointer">
+                  <option value="TODOS">TODOS OS VENDEDORES</option>
+                  {availableSellers.map(v => <option key={v} value={v}>{v}</option>)}
+                </select>
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400"><Icon name="chevron-down" className="w-4 h-4" /></div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            <div className="bg-slate-900 p-4 rounded-3xl text-white shadow-xl flex flex-col justify-between">
+              <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400">Total Vendas</span>
+              <h2 className="text-3xl font-black italic tracking-tighter my-1">{metrics.totalVendasCount}</h2>
+              <span className="text-[8px] font-black uppercase border-t border-white/10 pt-2 text-slate-400 flex justify-between items-center gap-2">
+                <span className="truncate pr-2" title={`${metrics.labelMeta}: ${metrics.metaLojaUsada}`}>{metrics.labelMeta}: {metrics.metaLojaUsada}</span>
+                <span className="text-emerald-400 shrink-0">{metrics.atingimento}%</span>
+              </span>
+            </div>
+            <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex flex-col justify-between">
+              <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Projeção Mês</span>
+              <h3 className="text-2xl font-black text-slate-800 italic my-1">{metrics.projecao}</h3>
+              <span className="text-[8px] font-bold text-blue-600 bg-blue-50 p-1 rounded-xl text-center">Em {uteisDecorridos}/{uteisTotal} úteis</span>
+            </div>
+            <div className="bg-gradient-to-br from-emerald-600 to-teal-800 p-4 rounded-3xl text-white shadow-md flex flex-col justify-between">
+              <span className="text-[9px] font-black uppercase tracking-widest text-emerald-200">Mix High</span>
+              <h2 className="text-2xl font-black italic tracking-tighter my-1">{metrics.mixHighPerc}%</h2>
+              <span className="text-[8px] font-bold text-emerald-100 border-t border-white/20 pt-1 flex justify-between uppercase">
+                <span>High: {metrics.mixHighCount}</span><span>Total: {metrics.mixHighTotal}</span>
+              </span>
+            </div>
+            <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex flex-col justify-between">
+              <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Méd/Dia Geral</span>
+              <h3 className="text-2xl font-black text-slate-800 italic">{metrics.totalVendasCount > 0 ? (metrics.totalVendasCount / metrics.uDecorridos).toFixed(1) : '0.0'}</h3>
+              <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-2">
+                <div className="bg-emerald-500 h-full" style={{ width: `${(metrics.uDecorridos / (uteisTotal || 1)) * 100}%` }}></div>
+              </div>
+            </div>
+            <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex flex-col justify-between">
+              <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Proj/Vend</span>
+              <h3 className="text-2xl font-black text-slate-800 italic my-1">{(metrics.projecao / metrics.vendedoresUnicos).toFixed(1)}</h3>
+              <span className="text-[8px] font-bold text-amber-600 bg-amber-50 p-1 rounded-xl text-center uppercase">Meta Ind: {metrics.metaInd}</span>
+            </div>
+            <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex flex-col justify-between">
+              <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Méd/Dia/Vend</span>
+              <h3 className="text-2xl font-black text-slate-800 italic my-1">{(metrics.totalVendasCount / metrics.uDecorridos / metrics.vendedoresUnicos).toFixed(2)}</h3>
+              <span className="text-[8px] font-bold text-purple-600 bg-purple-50 p-1 rounded-xl text-center uppercase">{metrics.vendedoresUnicos} Consultores</span>
+            </div>
+            <div className={`p-4 rounded-3xl border shadow-sm flex flex-col justify-between ${currentQuartileMetrics.bg}`}>
+              <span className={`text-[9px] font-black uppercase tracking-widest ${currentQuartileMetrics.color}`}>Quartil</span>
+              <h3 className={`text-2xl font-black italic tracking-tighter ${currentQuartileMetrics.color}`}>{currentQuartileMetrics.quartil}</h3>
+              <span className={`text-[8px] font-bold uppercase bg-white/60 p-1 rounded text-center ${currentQuartileMetrics.color}`}>Média: {currentQuartileMetrics.duPerSeller} D/U</span>
+            </div>
+            <div className="bg-white p-4 rounded-3xl border border-blue-100 shadow-sm flex flex-col justify-between">
+              <span className="text-[9px] font-black uppercase tracking-widest text-blue-600">Mês Anterior</span>
+              <h3 className="text-2xl font-black text-slate-800 italic my-1">{metrics.totalVendasMesAnterior}</h3>
+              <button onClick={() => document.getElementById('inputVendasMesAnterior').click()} className="text-[8px] font-bold text-blue-600 uppercase bg-blue-50 py-1 px-1 rounded text-center cursor-pointer hover:bg-blue-100 w-full mt-2">Importar CSV</button>
+            </div>
+            <div className={`p-4 rounded-3xl border shadow-sm flex flex-col justify-between sm:col-span-2 lg:col-span-1 xl:col-span-2 ${Number(metrics.diferencaVendas) >= 0 ? 'bg-emerald-50/60 border-emerald-200' : 'bg-rose-50/60 border-rose-200'}`}>
+              <span className="text-[9px] font-black uppercase tracking-widest text-slate-600">Comparativo</span>
+              <h3 className={`text-xl font-black italic ${Number(metrics.diferencaVendas) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                {Number(metrics.percComparativo) >= 0 ? `+${metrics.percComparativo}%` : `${metrics.percComparativo}%`}
+              </h3>
+              <span className="text-[8px] font-bold uppercase text-slate-600">{metrics.diferencaVendas} vendas em relação ao mês anterior</span>
+            </div>
+          </div>
+
+          <div className="bg-white p-4 md:p-6 rounded-[2rem] border border-slate-100 shadow-sm h-[320px] flex flex-col">
+            <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-400 italic mb-4 shrink-0">Quantidade de Vendas por Dia</h3>
+            <div className="flex-1 min-h-0 relative"><canvas ref={canvasVendasDiaRef}></canvas></div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-white p-4 md:p-6 rounded-[2rem] border border-slate-100 shadow-sm h-[320px] flex flex-col">
+              <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-400 italic mb-4">Quantidade de Vendas por Equipe</h3>
+              <div className="flex-1 min-h-0 relative"><canvas ref={canvasEquipesRef}></canvas></div>
+            </div>
+            <div className="bg-white p-4 md:p-6 rounded-[2rem] border border-slate-100 shadow-sm h-[320px] flex flex-col">
+              <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-400 italic mb-4">Distribuição de Planos</h3>
+              <div className="flex-1 min-h-0 relative"><canvas ref={canvasMixHighRef}></canvas></div>
+            </div>
+          </div>
+        </div>
+      );
+
+      const renderEquipesTab = () => (
+        <div className="space-y-8 max-w-6xl mx-auto">
+          <div className="bg-white p-4 md:p-5 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col lg:flex-row gap-4 items-center justify-between">
+            <div className="flex items-center gap-3 w-full lg:w-auto">
+              <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center shrink-0"><Icon name="filter" className="w-5 h-5" /></div>
+              <div>
+                <h3 className="text-xs font-black uppercase tracking-wider text-slate-800">Filtros Semana por Semana</h3>
+                <p className="text-[9px] font-bold text-slate-400 uppercase">Filtre por equipe e vendedor</p>
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+              <div className="relative w-full sm:w-60">
+                <select value={selectedTeamFilter} onChange={(e) => { setSelectedTeamFilter(e.target.value); setSelectedSellerFilter('TODOS'); }} className="w-full bg-slate-50 border border-slate-200 px-5 py-3 rounded-2xl text-xs font-black text-slate-700 outline-none appearance-none pr-10 cursor-pointer">
+                  <option value="TODAS">TODAS AS EQUIPES</option>
+                  {availableTeams.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400"><Icon name="chevron-down" className="w-4 h-4" /></div>
+              </div>
+              <div className="relative w-full sm:w-60">
+                <select value={selectedSellerFilter} onChange={(e) => setSelectedSellerFilter(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-5 py-3 rounded-2xl text-xs font-black text-slate-700 outline-none appearance-none pr-10 cursor-pointer">
+                  <option value="TODOS">TODOS OS VENDEDORES</option>
+                  {availableSellers.map(v => <option key={v} value={v}>{v}</option>)}
+                </select>
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400"><Icon name="chevron-down" className="w-4 h-4" /></div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 italic mb-4 flex items-center gap-2"><Icon name="calendar-days" className="w-4 h-4 text-blue-500" /> Progresso Semanal Real</h3>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              {[
+                { id: 'S1', label: 'Semana 1', val: weeklyMetrics.S1, days: weekLabels[0] },
+                { id: 'S2', label: 'Semana 2', val: weeklyMetrics.S2, days: weekLabels[1] },
+                { id: 'S3', label: 'Semana 3', val: weeklyMetrics.S3, days: weekLabels[2] },
+                { id: 'S4', label: 'Semana 4', val: weeklyMetrics.S4, days: weekLabels[3] },
+                { id: 'S5', label: 'Semana 5', val: weeklyMetrics.S5, days: weekLabels[4] }
+              ].map(c => (
+                <div key={c.id} className="bg-white p-4 md:p-5 rounded-3xl border border-slate-100 shadow-sm">
+                  <span className="text-[9px] font-black uppercase text-slate-400">{c.label}</span>
+                  <h3 className="text-3xl font-black text-emerald-600 italic my-1">{c.val} <span className="text-xs text-slate-400">vds</span></h3>
+                  <span className="text-[8px] font-bold text-slate-500 uppercase">{c.days}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-white p-4 md:p-8 rounded-[3rem] border border-slate-100 shadow-sm mt-8">
+            <h3 className="text-lg font-black uppercase text-slate-900 italic mb-6 flex items-center gap-2">
+              <Icon name="users" className="w-5 h-5 text-blue-500"/> Visão por Equipe
+            </h3>
+            <div className="flex gap-4 md:gap-6 overflow-x-auto custom-scrollbar pb-4">
+              {[1,2,3,4,5].map(w => {
+                 if (weeksDays[w] === 0 && semanasConfig[w].inicio === 0) return null; 
+                 let sumMeta = 0, sumReal = 0, sumGap = 0;
+                 return (
+                   <div key={`eq-w${w}`} className="min-w-max border border-slate-200 rounded-xl overflow-hidden shadow-sm flex flex-col">
+                     <table className="w-full text-left border-collapse min-w-[280px]">
+                       <thead className="bg-slate-50 text-[9px] font-black text-slate-500 uppercase">
+                         <tr>
+                           <th className="px-3 py-2 border-b border-slate-200">Equipe</th>
+                           <th className="px-3 py-2 border-b border-slate-200 text-center">Meta S{w}</th>
+                           <th className="px-3 py-2 border-b border-slate-200 text-center">Real S{w}</th>
+                           <th className="px-3 py-2 border-b border-slate-200 text-center">Du S{w}</th>
+                           <th className="px-3 py-2 border-b border-slate-200 text-center">Gap S{w}</th>
+                         </tr>
+                       </thead>
+                       <tbody className="divide-y divide-slate-100 text-xs">
+                         {weeklyData.equipes.map(eq => {
+                            const meta = eq.isLoja ? 0 : Math.round((metasEquipeMap[eq.equipe]?.metaDia ?? metaEquipeDia) * weeksDays[w]);
+                            const real = eq[w];
+                            const du = weeksDays[w] > 0 ? (real / weeksDays[w]).toFixed(1) : '0.0';
+                            const gap = real - meta;
+                            sumMeta += meta; sumReal += real; sumGap += gap;
+                            return (
+                              <tr key={eq.equipe} className="hover:bg-slate-50 transition-colors">
+                                <td className="px-3 py-2 font-bold text-slate-700 uppercase">{eq.equipe}</td>
+                                <td className="px-3 py-2 text-center font-medium text-slate-500">{meta}</td>
+                                <td className="px-3 py-2 text-center font-black text-slate-800">{real}</td>
+                                <td className="px-3 py-2 text-center font-semibold text-blue-600">{du}</td>
+                                <td className={`px-3 py-2 text-center font-bold ${gap < 0 ? 'text-rose-600' : 'text-emerald-600'}`}>{gap}</td>
+                              </tr>
+                            );
+                         })}
+                       </tbody>
+                       <tfoot className="bg-slate-50 border-t border-slate-200 text-xs font-black text-slate-800 uppercase">
+                         <tr>
+                           <td className="px-3 py-2">Total</td>
+                           <td className="px-3 py-2 text-center">{sumMeta}</td>
+                           <td className="px-3 py-2 text-center">{sumReal}</td>
+                           <td className="px-3 py-2 text-center"></td>
+                           <td className={`px-3 py-2 text-center ${sumGap < 0 ? 'text-rose-600' : 'text-emerald-600'}`}>{sumGap}</td>
+                         </tr>
+                       </tfoot>
+                     </table>
+                   </div>
+                 );
+              })}
+            </div>
+          </div>
+
+          <div className="bg-white p-4 md:p-8 rounded-[3rem] border border-slate-100 shadow-sm mt-8">
+            <h3 className="text-lg font-black uppercase text-slate-900 italic mb-6 flex items-center gap-2">
+              <Icon name="user-check" className="w-5 h-5 text-emerald-500"/> Visão por Vendedor
+            </h3>
+            <div className="flex gap-4 md:gap-6 overflow-x-auto custom-scrollbar pb-4">
+              {[1,2,3,4,5].map(w => {
+                 if (weeksDays[w] === 0 && semanasConfig[w].inicio === 0) return null; 
+                 let sumMeta = 0, sumReal = 0, sumGap = 0;
+                 return (
+                   <div key={`vend-w${w}`} className="min-w-max border border-slate-200 rounded-xl overflow-hidden shadow-sm flex flex-col">
+                     <table className="w-full text-left border-collapse min-w-[280px]">
+                       <thead className="bg-slate-50 text-[9px] font-black text-slate-500 uppercase">
+                         <tr>
+                           <th className="px-3 py-2 border-b border-slate-200">Vendedor</th>
+                           <th className="px-3 py-2 border-b border-slate-200 text-center">Meta S{w}</th>
+                           <th className="px-3 py-2 border-b border-slate-200 text-center">Real S{w}</th>
+                           <th className="px-3 py-2 border-b border-slate-200 text-center">Du S{w}</th>
+                           <th className="px-3 py-2 border-b border-slate-200 text-center">Gap S{w}</th>
+                         </tr>
+                       </thead>
+                       <tbody className="divide-y divide-slate-100 text-xs">
+                         {weeklyData.vendedores.map(vend => {
+                            const meta = Math.round((metasVendedorMap[vend.vendedor]?.metaDia ?? metaVendedorDia) * weeksDays[w]);
+                            const real = vend[w];
+                            const du = weeksDays[w] > 0 ? (real / weeksDays[w]).toFixed(2) : '0.00';
+                            const gap = real - meta;
+                            sumMeta += meta; sumReal += real; sumGap += gap;
+                            return (
+                              <tr key={vend.vendedor} className="hover:bg-slate-50 transition-colors">
+                                <td className="px-3 py-2 font-bold text-slate-700 uppercase">{vend.vendedor}</td>
+                                <td className="px-3 py-2 text-center font-medium text-slate-500">{meta}</td>
+                                <td className="px-3 py-2 text-center font-black text-slate-800">{real}</td>
+                                <td className="px-3 py-2 text-center font-semibold text-blue-600">{du}</td>
+                                <td className={`px-3 py-2 text-center font-bold ${gap < 0 ? 'text-rose-600' : 'text-emerald-600'}`}>{gap}</td>
+                              </tr>
+                            );
+                         })}
+                       </tbody>
+                       <tfoot className="bg-slate-50 border-t border-slate-200 text-xs font-black text-slate-800 uppercase">
+                         <tr>
+                           <td className="px-3 py-2">Total</td>
+                           <td className="px-3 py-2 text-center">{sumMeta}</td>
+                           <td className="px-3 py-2 text-center">{sumReal}</td>
+                           <td className="px-3 py-2 text-center"></td>
+                           <td className={`px-3 py-2 text-center ${sumGap < 0 ? 'text-rose-600' : 'text-emerald-600'}`}>{sumGap}</td>
+                         </tr>
+                       </tfoot>
+                     </table>
+                   </div>
+                 );
+              })}
+            </div>
+          </div>
+        </div>
+      );
+
+      const renderVendedoresTab = () => (
+        <div className="space-y-8 max-w-6xl mx-auto">
+          <div className="bg-white p-4 md:p-5 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="flex items-center gap-3 w-full md:w-auto">
+              <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center shrink-0"><Icon name="filter" className="w-5 h-5" /></div>
+              <div>
+                <h3 className="text-xs font-black uppercase tracking-wider text-slate-800">Filtros do Ranking</h3>
+                <p className="text-[9px] font-bold text-slate-400 uppercase">Filtre por equipe e nome</p>
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+              <div className="relative w-full sm:w-64">
+                <select value={selectedTeamFilter} onChange={(e) => setSelectedTeamFilter(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-4 py-2.5 rounded-2xl text-xs font-black text-slate-700 outline-none cursor-pointer">
+                  <option value="TODAS">TODAS AS EQUIPES</option>
+                  {availableTeams.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+              <div className="relative w-full sm:w-64">
+                <Icon name="search" className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input type="text" placeholder="Procurar vendedor..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-slate-50 border border-slate-200 pl-10 pr-4 py-2.5 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-emerald-500 shadow-sm" />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-xs font-black uppercase tracking-widest text-indigo-500 italic mb-4 flex items-center gap-2">
+              <Icon name="bar-chart-2" className="w-4 h-4" /> Nível de Produtividade (D/U)
+            </h3>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {[
+                { id: 'Q1', title: 'QUARTIL 1', desc: 'ACIMA DE 1.30 D/U', count: quartilCounts.Q1, color: 'text-emerald-500' },
+                { id: 'Q2', title: 'QUARTIL 2', desc: '1.0 A 1.29 D/U', count: quartilCounts.Q2, color: 'text-blue-600' },
+                { id: 'Q3', title: 'QUARTIL 3', desc: '0.70 A 0.99 D/U', count: quartilCounts.Q3, color: 'text-amber-500' },
+                { id: 'Q4', title: 'QUARTIL 4', desc: 'ABAIXO DE 0.70 D/U', count: quartilCounts.Q4, color: 'text-rose-600' }
+              ].map(q => (
+                <div 
+                  key={q.id} 
+                  onClick={() => setQuartilFilter(quartilFilter === q.id ? 'TODOS' : q.id)}
+                  className={`bg-white p-6 rounded-[2rem] border-2 cursor-pointer hover:scale-[1.02] transition-transform flex flex-col justify-between h-36 shadow-sm ${quartilFilter === q.id ? 'border-slate-800 shadow-md' : 'border-slate-100 hover:border-slate-200'}`}
+                >
+                  <span className={`text-[11px] font-black uppercase tracking-widest ${q.color}`}>{q.title}</span>
+                  <div className="mt-2 mb-1 flex items-baseline gap-1.5">
+                    <h3 className="text-4xl md:text-5xl font-black text-slate-800 italic leading-none">{q.count}</h3>
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">VEND.</span>
+                  </div>
+                  <span className="text-[9px] font-bold text-slate-400 uppercase mt-auto">{q.desc}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex justify-center mt-6">
+              <div className="inline-flex bg-white p-1.5 rounded-full border border-slate-100 shadow-sm gap-1 overflow-x-auto max-w-full">
+                 <button onClick={() => setTendenciaFilter('TODAS')} className={`px-5 py-2.5 rounded-full text-[10px] font-black uppercase transition-all whitespace-nowrap ${tendenciaFilter === 'TODAS' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'}`}>TODOS</button>
+                 <button onClick={() => setTendenciaFilter('ALTA')} className={`px-5 py-2.5 rounded-full text-[10px] font-black uppercase transition-all flex items-center gap-2 whitespace-nowrap ${tendenciaFilter === 'ALTA' ? 'bg-emerald-50 text-emerald-600 shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}>
+                    <Icon name="trending-up" className="w-3.5 h-3.5" /> EM ALTA ({tendenciaStats.emAlta})
+                 </button>
+                 <button onClick={() => setTendenciaFilter('QUEDA')} className={`px-5 py-2.5 rounded-full text-[10px] font-black uppercase transition-all flex items-center gap-2 whitespace-nowrap ${tendenciaFilter === 'QUEDA' ? 'bg-rose-50 text-rose-600 shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}>
+                    <Icon name="trending-down" className="w-3.5 h-3.5" /> EM QUEDA ({tendenciaStats.emQueda})
+                 </button>
+              </div>
+            </div>
+          </div>
+
+          {top3Vendedores.length > 0 && (
+            <div className="flex flex-col sm:flex-row items-end justify-center gap-6 md:gap-8 my-8 pt-8">
+              {top3Vendedores[1] && (
+                <div className="flex flex-col items-center order-2 sm:order-1">
+                  <div className="flex items-center gap-1 bg-slate-200 text-slate-700 px-3 py-1 rounded-full text-[9px] font-black mb-2"><Icon name="medal" className="w-3.5 h-3.5" /> 2º LUGAR</div>
+                  <span className="text-[11px] md:text-[13px] font-black text-slate-700 mb-1 uppercase text-center max-w-[120px] truncate">{top3Vendedores[1].vendedor}</span>
+                  <div className="w-28 md:w-48 h-36 md:h-48 bg-slate-200 rounded-t-[3.5rem] flex flex-col items-center justify-center relative shadow-md border-t-4 border-slate-400">
+                    <span className="text-4xl md:text-6xl font-black text-slate-700 italic leading-none">{top3Vendedores[1].total}</span>
+                    <span className="text-[10px] font-black text-slate-500 uppercase mt-2">Vendas</span>
+                  </div>
+                </div>
+              )}
+
+              {top3Vendedores[0] && (
+                <div className="flex flex-col items-center order-1 sm:order-2 z-10 sm:-mb-6">
+                  <Icon name="crown" className="w-10 h-10 md:w-12 md:h-12 text-amber-400 mb-2 drop-shadow-lg animate-bounce" />
+                  <div className="flex items-center gap-1 bg-amber-400 text-slate-950 px-4 py-1 rounded-full text-[10px] font-black mb-2 shadow"><Icon name="trophy" className="w-3.5 h-3.5" /> 1º LUGAR</div>
+                  <span className="text-[13px] md:text-[15px] font-black text-slate-900 mb-1 uppercase text-center max-w-[150px] truncate">{top3Vendedores[0].vendedor}</span>
+                  <div className="w-36 md:w-60 h-48 md:h-64 bg-gradient-to-b from-amber-400 to-amber-500 rounded-t-[4rem] flex flex-col items-center justify-center relative shadow-2xl border-t-4 border-amber-300">
+                    <span className="text-6xl md:text-8xl font-black text-white italic leading-none drop-shadow-md">{top3Vendedores[0].total}</span>
+                    <span className="text-[11px] font-black text-amber-950 uppercase mt-2">Vendas</span>
+                  </div>
+                </div>
+              )}
+
+              {top3Vendedores[2] && (
+                <div className="flex flex-col items-center order-3 sm:order-3">
+                  <div className="flex items-center gap-1 bg-amber-800/20 text-amber-900 px-3 py-1 rounded-full text-[9px] font-black mb-2"><Icon name="award" className="w-3.5 h-3.5" /> 3º LUGAR</div>
+                  <span className="text-[11px] md:text-[13px] font-black text-slate-700 mb-1 uppercase text-center max-w-[120px] truncate">{top3Vendedores[2].vendedor}</span>
+                  <div className="w-24 md:w-48 h-32 md:h-40 bg-amber-800/10 rounded-t-[3.5rem] flex flex-col items-center justify-center relative shadow-sm border-t-4 border-amber-700">
+                    <span className="text-3xl md:text-5xl font-black text-amber-900 italic leading-none">{top3Vendedores[2].total}</span>
+                    <span className="text-[10px] font-black text-amber-800/70 uppercase mt-2">Vendas</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="bg-white rounded-[3.5rem] border border-slate-100 shadow-sm overflow-hidden">
+            <div className="px-6 md:px-8 py-5 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center">
+              <h3 className="text-[11px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-2"><Icon name="list-ordered" className="w-4 h-4 text-emerald-500" /> Classificação Geral</h3>
+              {quartilFilter !== 'TODOS' && (
+                <button onClick={() => setQuartilFilter('TODOS')} className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full hover:bg-emerald-100">Limpar Filtro ({quartilFilter})</button>
+              )}
+            </div>
+            <div className="overflow-x-auto custom-scrollbar">
+              <table className="w-full text-left border-collapse min-w-[900px]">
+                <thead className="bg-white text-[9px] font-black text-slate-300 uppercase tracking-widest border-b border-slate-100">
+                  <tr>
+                    <th className="px-6 py-4">Consultor / Vendedor</th>
+                    <th className="px-6 py-4">Equipe</th>
+                    <th className="px-6 py-4 text-center text-emerald-600">Total Vendas</th>
+                    <th className="px-6 py-4 text-center">Instaladas</th>
+                    <th className="px-6 py-4 text-center">D/U Dia Útil</th>
+                    <th className="px-6 py-4 text-center">Mix High</th>
+                    <th className="px-6 py-4 text-center">Quartil</th>
+                    <th className="px-6 py-4 text-center">Projeção</th>
+                    <th className="px-6 py-4 text-center">Mês Anterior</th>
+                    <th className="px-6 py-4 text-center">Comparativo</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50 text-xs">
+                  {displayedSellers.map((v) => {
+                    const isPositiveProd = v.diferencaAnterior >= 0;
+                    return (
+                      <tr key={v.vendedor} className="hover:bg-slate-50/80 transition-all">
+                        <td className="px-6 py-4 font-black text-slate-800 uppercase text-xs">{v.vendedor}</td>
+                        <td className="px-6 py-4 font-bold text-slate-500 text-[10px] uppercase">{v.equipe}</td>
+                        <td className="px-6 py-4 text-center font-black text-slate-900 text-2xl italic">{v.total}</td>
+                        <td className="px-6 py-4 text-center font-bold text-slate-700 text-xs">{v.instaladas}</td>
+                        <td className="px-6 py-4 text-center font-black text-blue-600 text-sm">{v.du}</td>
+                        <td className="px-6 py-4 text-center"><span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-teal-50 text-teal-700 border border-teal-100">{v.percMixHigh}%</span></td>
+                        <td className="px-6 py-4 text-center">
+                          <span className={`px-2.5 py-1 rounded-md text-[10px] font-black border uppercase 
+                            ${v.quartil === 'Q1' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 
+                              v.quartil === 'Q2' ? 'bg-blue-50 text-blue-600 border-blue-200' : 
+                              v.quartil === 'Q3' ? 'bg-amber-50 text-amber-600 border-amber-200' : 
+                              'bg-rose-50 text-rose-600 border-rose-200'}`}>
+                            {v.quartil}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-center font-black text-emerald-600 text-sm">{v.projecao}</td>
+                        <td className="px-6 py-4 text-center font-bold text-slate-500 text-sm">{v.qtdVendasAnterior}</td>
+                        <td className="px-6 py-4 text-center">
+                          <div className={`flex flex-col items-center justify-center text-[10px] font-black px-2 py-1 rounded-md ${isPositiveProd ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
+                            <span>{isPositiveProd ? '+' : ''}{v.diferencaAnterior} Vds</span>
+                            <span className="opacity-75">{isPositiveProd ? '+' : ''}{v.produtividade}%</span>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      );
+
+      const renderEficaciaTab = () => {
+        const baseEficaciaData = eficaciaDataSource === 'atual' ? dashboardFilteredSales : dashboardFilteredPreviousSales;
+        const currentEficaciaData = filterEquipe === 'TODAS' ? baseEficaciaData : baseEficaciaData.filter(s => s.equipe === filterEquipe);
+
+        return (
+          <div className="space-y-6 max-w-[1600px] w-full mx-auto pb-10">
+            <div className="flex flex-col lg:flex-row items-center justify-between bg-white p-4 rounded-2xl shadow-sm border border-slate-100 gap-4 flex-wrap">
+              <div className="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
+                <div className="flex w-full sm:w-auto items-center gap-2 bg-slate-100 p-1 rounded-full shadow-inner justify-center">
+                  <button onClick={() => setEficaciaSubTab('dashboard')} className={`px-4 md:px-6 py-2.5 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-widest transition-all cursor-pointer ${eficaciaSubTab === 'dashboard' ? 'bg-emerald-500 text-white shadow-md' : 'text-slate-500'}`}>Dashboard</button>
+                  <button onClick={() => setEficaciaSubTab('processos')} className={`px-4 md:px-6 py-2.5 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-widest transition-all cursor-pointer ${eficaciaSubTab === 'processos' ? 'bg-emerald-500 text-white shadow-md' : 'text-slate-500'}`}>Processos</button>
+                </div>
+                
+                <div className="flex w-full sm:w-auto items-center gap-2 bg-slate-100 p-1 rounded-full shadow-inner justify-center">
+                  <button onClick={() => setEficaciaDataSource('atual')} className={`px-4 py-2.5 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-widest transition-all cursor-pointer flex items-center gap-2 ${eficaciaDataSource === 'atual' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200'}`}><Icon name="calendar" className="w-3.5 h-3.5" /> Mês Atual</button>
+                  <button onClick={() => setEficaciaDataSource('anterior')} className={`px-4 py-2.5 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-widest transition-all cursor-pointer flex items-center gap-2 ${eficaciaDataSource === 'anterior' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200'}`}><Icon name="history" className="w-3.5 h-3.5" /> Mês Anterior</button>
+                </div>
+              </div>
+
+              {eficaciaSubTab === 'dashboard' && (
+                <div className="flex w-full lg:w-auto items-center gap-3">
+                  <span className="text-xs font-bold text-slate-500 uppercase hidden sm:block">Equipe:</span>
+                  <select value={filterEquipe} onChange={(e) => setFilterEquipe(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-4 py-2 rounded-xl text-xs font-bold text-slate-700 outline-none cursor-pointer">
+                    <option value="TODAS">TODAS AS EQUIPES</option>
+                    {eficaciaFilterOptions.equipes.map(eq => <option key={eq} value={eq}>{eq}</option>)}
+                  </select>
+                </div>
+              )}
+            </div>
+
+            {eficaciaSubTab === 'dashboard' ? (
+              <div className="space-y-6">
+                <SummaryCards stats={dashboardEficaciaStats} activeStatusKey={filterCardStatusKey} onCardClick={(statusKey) => setFilterCardStatusKey(statusKey === filterCardStatusKey ? 'TODOS' : statusKey)} />
+                <TeamCardsSection data={currentEficaciaData} />
+                <VendorTable data={currentEficaciaData} />
+              </div>
+            ) : (
+              <>
+                <div className="bg-white rounded-[1.5rem] shadow-sm border border-slate-100 p-6 transition-all mt-6">
+                  <button onClick={() => setShowFilters(!showFilters)} className="w-full flex items-center justify-between group outline-none cursor-pointer">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-emerald-500 text-white shadow-md">
+                        <Icon name="filter" className="w-4 h-4" />
+                      </div>
+                      <h3 className="font-bold text-slate-700 uppercase tracking-widest text-xs">Filtros de Pesquisa</h3>
+                    </div>
+                    <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center border border-slate-100 group-hover:bg-slate-100 transition-colors">
+                      <Icon name={showFilters ? "chevron-up" : "chevron-down"} className="w-4 h-4 text-slate-400" />
+                    </div>
+                  </button>
+
+                  {showFilters && (
+                    <div className="mt-6 pt-6 border-t border-slate-100 flex flex-col gap-5">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Equipe</label>
+                          <select value={filterEquipe} onChange={(e) => setFilterEquipe(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-700 outline-none cursor-pointer shadow-sm">
+                            <option value="TODAS">Todas as Equipes</option>
+                            {eficaciaFilterOptions.equipes.map(eq => <option key={eq} value={eq}>{eq}</option>)}
+                          </select>
+                        </div>
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Status</label>
+                          <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-700 outline-none cursor-pointer shadow-sm">
+                            <option value="TODOS">Todos os Status</option>
+                            {eficaciaFilterOptions.status.map(st => <option key={st} value={st}>{st}</option>)}
+                          </select>
+                        </div>
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Vendedor</label>
+                          <select value={filterVendedor} onChange={(e) => setFilterVendedor(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-700 outline-none cursor-pointer shadow-sm">
+                            <option value="TODOS">Todos os Vendedores</option>
+                            {eficaciaFilterOptions.vendedores.map(v => <option key={v} value={v}>{v}</option>)}
+                          </select>
+                        </div>
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Turno</label>
+                          <select value={filterTurno} onChange={(e) => setFilterTurno(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-700 outline-none cursor-pointer shadow-sm">
+                            <option value="TODOS">Todos os Turnos</option>
+                            {eficaciaFilterOptions.turnos.map(t => <option key={t} value={t}>{t}</option>)}
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Data da Venda</label>
+                          <div className="flex items-center gap-3 w-full">
+                            <div className="relative flex-1">
+                              <input type="date" value={filterDataVendaInicio} onChange={(e) => setFilterDataVendaInicio(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-700 outline-none shadow-sm" />
+                            </div>
+                            <span className="text-[10px] font-bold text-slate-400">até</span>
+                            <div className="relative flex-1">
+                              <input type="date" value={filterDataVendaFim} onChange={(e) => setFilterDataVendaFim(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-700 outline-none shadow-sm" />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Data Agendamento</label>
+                          <div className="flex items-center gap-3 w-full">
+                            <div className="relative flex-1">
+                              <input type="date" value={filterDataAgendInicio} onChange={(e) => setFilterDataAgendInicio(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-700 outline-none shadow-sm" />
+                            </div>
+                            <span className="text-[10px] font-bold text-slate-400">até</span>
+                            <div className="relative flex-1">
+                              <input type="date" value={filterDataAgendFim} onChange={(e) => setFilterDataAgendFim(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-700 outline-none shadow-sm" />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Pesquisar Cliente / CPF / OS / Cidade</label>
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <Icon name="search" className="w-4 h-4 text-slate-400" />
+                          </div>
+                          <input type="text" placeholder="Escreva para pesquisar..." value={processSearchText} onChange={(e) => setProcessSearchText(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-xs font-medium text-slate-700 outline-none focus:border-emerald-500 shadow-sm" />
+                        </div>
+                      </div>
+
+                      <div className="flex justify-end pt-2">
+                        <button onClick={clearAllProcessFilters} className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700 border border-rose-100 transition-all cursor-pointer shadow-sm">
+                          <Icon name="eraser" className="w-4 h-4" /> Limpar Todos os Filtros
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="bg-white rounded-[1.5rem] shadow-sm border border-slate-100 overflow-hidden flex flex-col mt-6">
+                  <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 flex-wrap gap-4">
+                    <h3 className="font-bold text-slate-700 uppercase tracking-widest text-xs flex items-center gap-2">
+                      <Icon name="list" className="w-4 h-4 text-emerald-500" /> Lista de Processos ({filteredProcessData.length})
+                    </h3>
+                  </div>
+
+                  <div className="overflow-x-auto custom-scrollbar">
+                    <table className="w-full text-left border-collapse min-w-[1100px]">
+                      <thead className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase">
+                        <tr>
+                          <th className="px-4 py-3">Cliente</th>
+                          <th className="px-4 py-3">OS</th>
+                          <th className="px-4 py-3">CPF</th>
+                          <th className="px-4 py-3">Cidade</th>
+                          <th className="px-4 py-3">Dt Venda</th>
+                          <th className="px-4 py-3">Dt Agendamento</th>
+                          <th className="px-4 py-3">Vendedor</th>
+                          <th className="px-4 py-3">Equipe</th>
+                          <th className="px-4 py-3">Status</th>
+                          <th className="px-4 py-3 text-center">Ações</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y text-xs">
+                        {paginatedProcessData.map(row => (
+                          <tr key={row.id} className="hover:bg-slate-50">
+                            <td className="px-4 py-3 font-semibold">{row.cliente}</td>
+                            <td className="px-4 py-3 font-mono text-slate-600">{row.os || '-'}</td>
+                            <td className="px-4 py-3">{row.cpf || '-'}</td>
+                            <td className="px-4 py-3">{row.cidade || '-'}</td>
+                            <td className="px-4 py-3">{row.dataVendaFormatada || '-'}</td>
+                            <td className="px-4 py-3 font-semibold text-blue-600">{row.dataAgendamento || '-'}</td>
+                            <td className="px-4 py-3">{row.vendedor}</td>
+                            <td className="px-4 py-3">{row.equipe}</td>
+                            <td className="px-4 py-3"><span className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase ${getStatusColor(row.statusAgendamento || row.status)}`}>{row.statusAgendamento || row.status}</span></td>
+                            <td className="px-4 py-3 text-center">
+                              <button onClick={() => setSelectedSaleDetails(row)} className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-xl font-bold text-[10px] uppercase transition cursor-pointer flex items-center gap-1 mx-auto">
+                                <Icon name="eye" className="w-3.5 h-3.5" /> Detalhes
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        );
+      };
+
+      const renderChurnTab = () => (
+        <div className="space-y-6 max-w-6xl mx-auto">
+          <div className="bg-white p-4 md:p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+            <div>
+              <h3 className="text-lg md:text-xl font-black text-slate-800 uppercase italic">Módulo Churn Geral</h3>
+              <p className="text-[10px] md:text-xs text-slate-400 font-bold uppercase tracking-wider">Acompanhamento e cancelamentos recorrentes.</p>
+            </div>
+            <button onClick={() => document.getElementById('inputChurn').click()} className="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-600 text-white font-black text-xs uppercase px-6 py-3 rounded-2xl shadow flex items-center justify-center gap-2 cursor-pointer">
+              <Icon name="file-up" className="w-4 h-4" /> Carregar CSV
+            </button>
+          </div>
+          <div className="bg-white p-4 md:p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
+            <h4 className="text-xs font-black uppercase text-slate-400 tracking-wider mb-4">Registos Importados ({churnData.length})</h4>
+            {churnData.length > 0 ? (
+              <div className="overflow-x-auto custom-scrollbar">
+                <table className="w-full text-left text-xs border-collapse min-w-[500px]">
+                  <thead className="bg-slate-50 font-black text-slate-400 uppercase"><tr><th className="p-3">Registo 1</th><th className="p-3">Registo 2</th><th className="p-3">Registo 3</th></tr></thead>
+                  <tbody className="divide-y">{churnData.map(item => (<tr key={item.id} className="hover:bg-slate-50"><td className="p-3 font-medium">{item.col1}</td><td className="p-3">{item.col2}</td><td className="p-3">{item.col3}</td></tr>))}</tbody>
+                </table>
+              </div>
+            ) : (<p className="text-xs text-slate-400 text-center py-10 uppercase font-bold">Nenhum ficheiro carregado.</p>)}
+          </div>
+        </div>
+      );
+
+      const renderFpdTab = () => (
+        <div className="space-y-6 max-w-6xl mx-auto">
+          <div className="bg-white p-4 md:p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+            <div>
+              <h3 className="text-lg md:text-xl font-black text-slate-800 uppercase italic">Setor FPD (First Payment Default)</h3>
+              <p className="text-[10px] md:text-xs text-slate-400 font-bold uppercase tracking-wider">Monitoramento de inadimplência precoce.</p>
+            </div>
+            <button onClick={() => document.getElementById('inputFpd').click()} className="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 text-white font-black text-xs uppercase px-6 py-3 rounded-2xl shadow flex items-center justify-center gap-2 cursor-pointer">
+              <Icon name="file-up" className="w-4 h-4" /> Carregar CSV
+            </button>
+          </div>
+          <div className="bg-white p-4 md:p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
+            <h4 className="text-xs font-black uppercase text-slate-400 tracking-wider mb-4">Registos FPD ({fpdData.length})</h4>
+            {fpdData.length > 0 ? (
+              <div className="overflow-x-auto custom-scrollbar">
+                <table className="w-full text-left text-xs border-collapse min-w-[500px]">
+                  <thead className="bg-slate-50 font-black text-slate-400 uppercase"><tr><th className="p-3">Dado 1</th><th className="p-3">Dado 2</th><th className="p-3">Dado 3</th></tr></thead>
+                  <tbody className="divide-y">{fpdData.map(item => (<tr key={item.id} className="hover:bg-slate-50"><td className="p-3 font-medium">{item.col1}</td><td className="p-3">{item.col2}</td><td className="p-3">{item.col3}</td></tr>))}</tbody>
+                </table>
+              </div>
+            ) : (<p className="text-xs text-slate-400 text-center py-10 uppercase font-bold">Nenhum ficheiro FPD carregado.</p>)}
+          </div>
+        </div>
+      );
+
+      const renderCancelamentoTab = () => (
+        <div className="space-y-6 max-w-6xl mx-auto">
+          <div className="bg-white p-4 md:p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+            <div>
+              <h3 className="text-lg md:text-xl font-black text-slate-800 uppercase italic">Setor de Cancelamento</h3>
+              <p className="text-[10px] md:text-xs text-slate-400 font-bold uppercase tracking-wider">Gestão e retenção de contratos.</p>
+            </div>
+            <button onClick={() => document.getElementById('inputCancelamento').click()} className="w-full sm:w-auto bg-rose-600 hover:bg-rose-500 text-white font-black text-xs uppercase px-6 py-3 rounded-2xl shadow flex items-center justify-center gap-2 cursor-pointer">
+              <Icon name="file-up" className="w-4 h-4" /> Carregar CSV
+            </button>
+          </div>
+          <div className="bg-white p-4 md:p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
+            <h4 className="text-xs font-black uppercase text-slate-400 tracking-wider mb-4">Registos ({cancelamentoData.length})</h4>
+            {cancelamentoData.length > 0 ? (
+              <div className="overflow-x-auto custom-scrollbar">
+                <table className="w-full text-left text-xs border-collapse min-w-[500px]">
+                  <thead className="bg-slate-50 font-black text-slate-400 uppercase"><tr><th className="p-3">Item 1</th><th className="p-3">Item 2</th><th className="p-3">Item 3</th></tr></thead>
+                  <tbody className="divide-y">{cancelamentoData.map(item => (<tr key={item.id} className="hover:bg-slate-50"><td className="p-3 font-medium">{item.col1}</td><td className="p-3">{item.col2}</td><td className="p-3">{item.col3}</td></tr>))}</tbody>
+                </table>
+              </div>
+            ) : (<p className="text-xs text-slate-400 text-center py-10 uppercase font-bold">Nenhum ficheiro carregado.</p>)}
+          </div>
+        </div>
+      );
+
+      const renderQualidadeTab = () => (
+        <div className="space-y-6 max-w-6xl mx-auto">
+          <div className="bg-white p-4 md:p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+            <div>
+              <h3 className="text-lg md:text-xl font-black text-slate-800 uppercase italic">Painel de Qualidade</h3>
+              <p className="text-[10px] md:text-xs text-slate-400 font-bold uppercase tracking-wider">Auditoria de cadastros.</p>
+            </div>
+            <button onClick={() => document.getElementById('inputQualidade').click()} className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase px-6 py-3 rounded-2xl shadow flex items-center justify-center gap-2 cursor-pointer">
+              <Icon name="file-up" className="w-4 h-4" /> Carregar CSV
+            </button>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm h-[320px] flex flex-col">
+              <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-400 italic mb-4">Status Geral de Qualidade</h3>
+              <div className="flex-1 min-h-0 relative"><canvas ref={canvasQualidadeRef}></canvas></div>
+            </div>
+            <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col justify-between">
+              <div>
+                <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-400 italic mb-2">Indicadores de Auditoria</h3>
+                <p className="text-xs text-slate-500 font-medium">Os cadastros são avaliados rigorosamente para garantir conformidade operacional e padrão de atendimento.</p>
+              </div>
+              <div className="grid grid-cols-2 gap-4 mt-4">
+                <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 text-center">
+                  <span className="text-[10px] font-bold text-emerald-600 uppercase">Aprovados</span>
+                  <h4 className="text-2xl md:text-3xl font-black text-emerald-700 mt-1">92.5%</h4>
+                </div>
+                <div className="bg-rose-50 p-4 rounded-2xl border border-rose-100 text-center">
+                  <span className="text-[10px] font-bold text-rose-600 uppercase">Erros</span>
+                  <h4 className="text-2xl md:text-3xl font-black text-rose-700 mt-1">7.5%</h4>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+
+      const renderMetasTab = () => (
+        <div className="max-w-5xl mx-auto space-y-8">
+          {!isMetasAutenticado ? (
+            <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm text-center max-w-sm mx-auto mt-10 md:mt-20">
+              <Icon name="lock" className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+              <h2 className="text-xl font-black text-slate-800 mb-2">Acesso Restrito</h2>
+              <p className="text-xs text-slate-500 mb-6">Digite a senha de gestor para aceder às configurações de Metas.</p>
+              <input type="password" value={inputSenha} onChange={e => setInputSenha(e.target.value)} className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl mb-4 text-center tracking-widest font-black outline-none focus:border-emerald-500" placeholder="••••" />
+              <button onClick={() => { if(inputSenha === senhaGestor) setIsMetasAutenticado(true); else showToast('Senha incorreta!', 'error'); }} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black py-3 rounded-xl transition-all shadow-md cursor-pointer">ACEDER</button>
+            </div>
+          ) : (
+            <div className="space-y-8 pb-6">
+              <div className="bg-white p-4 md:p-6 rounded-[2rem] border border-slate-100 shadow-sm">
+                <h2 className="text-sm font-black italic uppercase text-slate-900 flex items-center gap-2 mb-6">
+                  <Icon name="globe" className="w-5 h-5 text-emerald-500" /> Parâmetros Gerais
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+                  <div>
+                    <label className="block text-[10px] font-black uppercase text-slate-400 mb-2">Meta Geral da Loja (Mês)</label>
+                    <input type="number" value={metaLoja} onChange={(e) => setMetaLoja(Number(e.target.value))} className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-2xl font-black text-slate-800 outline-none focus:border-emerald-500" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase text-slate-400 mb-2">Dias Úteis Decorridos</label>
+                    <input type="number" value={uteisDecorridos} onChange={(e) => setUteisDecorridos(Number(e.target.value))} className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-2xl font-black text-slate-800 outline-none focus:border-emerald-500" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase text-slate-400 mb-2">Dias Úteis Totais do Mês</label>
+                    <input type="number" value={uteisTotal} onChange={(e) => setUteisTotal(Number(e.target.value))} className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-2xl font-black text-slate-800 outline-none focus:border-emerald-500" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase text-slate-400 mb-2">Nova Senha de Gestor</label>
+                    <input type="text" value={senhaGestor} onChange={(e) => setSenhaGestor(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-2xl font-black text-slate-800 outline-none focus:border-emerald-500" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white p-4 md:p-6 rounded-[2rem] border border-slate-100 shadow-sm">
+                <h2 className="text-sm font-black italic uppercase text-slate-900 flex items-center gap-2 mb-6">
+                  <Icon name="calendar" className="w-5 h-5 text-blue-500" /> Semanas (Data e D/U)
+                </h2>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                  {[1, 2, 3, 4, 5].map(w => (
+                    <div key={w} className="bg-slate-50 border border-slate-100 p-4 rounded-2xl">
+                      <h3 className="text-xs font-black text-slate-700 mb-3 text-center uppercase tracking-widest">S{w}</h3>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-[9px] font-bold uppercase text-slate-400 mb-1 text-center">Início</label>
+                          <input type="number" value={semanasConfig[w].inicio} onChange={(e) => handleSemanaChange(w, 'inicio', Number(e.target.value))} className="w-full bg-white border border-slate-200 px-2 py-2 rounded-xl text-center text-xs font-bold outline-none" />
+                        </div>
+                        <div>
+                          <label className="block text-[9px] font-bold uppercase text-slate-400 mb-1 text-center">Fim</label>
+                          <input type="number" value={semanasConfig[w].fim} onChange={(e) => handleSemanaChange(w, 'fim', Number(e.target.value))} className="w-full bg-white border border-slate-200 px-2 py-2 rounded-xl text-center text-xs font-bold outline-none" />
+                        </div>
+                        <div>
+                          <label className="block text-[9px] font-bold uppercase text-slate-400 mb-1 text-center">Dias Úteis</label>
+                          <input type="number" step="0.5" value={semanasConfig[w].du} onChange={(e) => handleSemanaChange(w, 'du', Number(e.target.value))} className="w-full bg-white border border-slate-200 px-2 py-2 rounded-xl text-center text-xs font-black text-blue-600 outline-none" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <div className="bg-white p-4 md:p-6 rounded-[2rem] border border-slate-100 shadow-sm">
+                  <h2 className="text-sm font-black italic uppercase text-slate-900 flex items-center gap-2 mb-4">
+                    <Icon name="users" className="w-5 h-5 text-indigo-500" /> Por Equipe
+                  </h2>
+                  <div className="space-y-4">
+                    <select value={configEquipeSel} onChange={(e) => setConfigEquipeSel(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-2xl text-xs font-bold text-slate-700 outline-none">
+                      <option value="TODAS">Selecione uma Equipe...</option>
+                      {availableTeams.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                    {configEquipeSel === 'TODAS' ? (
+                       <div className="text-center p-4 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-500">
+                         Selecione uma equipa acima para configurar as suas metas.
+                       </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-[10px] font-black uppercase text-slate-400 mb-2">Meta da Equipa (Mês)</label>
+                          <input type="number" value={metasEquipeMap[configEquipeSel]?.metaMes ?? ''} onChange={(e) => handleSaveMetasEquipe(configEquipeSel, 'metaMes', e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-2xl font-black text-slate-800 outline-none" />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-black uppercase text-slate-400 mb-2">Meta da Equipa por Dia</label>
+                          <input type="number" step="0.1" value={metasEquipeMap[configEquipeSel]?.metaDia ?? metaEquipeDia} onChange={(e) => handleSaveMetasEquipe(configEquipeSel, 'metaDia', e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-2xl font-black text-slate-800 outline-none" />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-black uppercase text-slate-400 mb-2">Qtd. Vendedores (Equipa)</label>
+                          <input type="number" value={metasEquipeMap[configEquipeSel]?.qtdVendedores ?? ''} onChange={(e) => handleSaveMetasEquipe(configEquipeSel, 'qtdVendedores', e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-2xl font-black text-blue-600 outline-none" placeholder="Ex: 5" />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="bg-white p-4 md:p-6 rounded-[2rem] border border-slate-100 shadow-sm">
+                  <h2 className="text-sm font-black italic uppercase text-slate-900 flex items-center gap-2 mb-4">
+                    <Icon name="user-check" className="w-5 h-5 text-amber-500" /> Por Vendedor
+                  </h2>
+                  <div className="space-y-4">
+                    <select value={configVendedorSel} onChange={(e) => setConfigVendedorSel(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-2xl text-xs font-bold text-slate-700 outline-none">
+                      <option value="TODOS">Selecione um Vendedor...</option>
+                      {availableSellers.map(v => <option key={v} value={v}>{v}</option>)}
+                    </select>
+                    {configVendedorSel === 'TODOS' ? (
+                       <div className="text-center p-4 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-500">
+                         Selecione um vendedor acima para configurar as suas metas.
+                       </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-[10px] font-black uppercase text-slate-400 mb-2">Meta do Vendedor (Mês)</label>
+                          <input type="number" value={metasVendedorMap[configVendedorSel]?.metaMes ?? ''} onChange={(e) => handleSaveMetasVendedor(configVendedorSel, 'metaMes', e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-2xl font-black text-slate-800 outline-none" />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-black uppercase text-slate-400 mb-2">Meta do Vendedor por Dia</label>
+                          <input type="number" step="0.1" value={metasVendedorMap[configVendedorSel]?.metaDia ?? metaEquipeDia} onChange={(e) => handleSaveMetasVendedor(configVendedorSel, 'metaDia', e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-2xl font-black text-slate-800 outline-none" />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <button onClick={salvarConfiguracoesGerais} className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black uppercase text-xs py-4 rounded-2xl shadow-lg transition-all cursor-pointer mt-4">
+                Salvar Configurações
+              </button>
+            </div>
+          )}
+        </div>
+      );
+
+      const renderFinanceiroTab = () => (
+        <div className="max-w-5xl mx-auto space-y-8">
+          {!isFinanceiroAutenticado ? (
+            <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm text-center max-w-sm mx-auto mt-10 md:mt-20">
+              <Icon name="lock" className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+              <h2 className="text-xl font-black text-slate-800 mb-2">Acesso Restrito</h2>
+              <p className="text-xs text-slate-500 mb-6">Digite a senha para aceder ao Financeiro.</p>
+              <input type="password" value={inputSenhaFinanceiro} onChange={e => setInputSenhaFinanceiro(e.target.value)} className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl mb-4 text-center tracking-widest font-black outline-none focus:border-emerald-500" placeholder="••••" />
+              <button onClick={() => { if(inputSenhaFinanceiro === senhaGestor) setIsFinanceiroAutenticado(true); else showToast('Senha incorreta!', 'error'); }} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-3 rounded-xl transition-all shadow-md cursor-pointer">ACEDER</button>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              <div className="bg-white p-4 md:p-8 rounded-[2.5rem] border border-slate-100 shadow-sm text-center">
+                 <h3 className="text-xl md:text-2xl font-black text-slate-800 mb-2 uppercase italic flex items-center justify-center gap-3"><Icon name="banknote" className="w-5 h-5 md:w-6 md:h-6 text-emerald-500"/> Módulo Financeiro</h3>
+                 <p className="text-[10px] md:text-xs text-slate-400 font-bold uppercase tracking-wider mb-8">Visão geral de faturação e projeções.</p>
+                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 text-left">
+                   <div className="bg-emerald-50 p-6 rounded-[2rem] border border-emerald-100 shadow-sm">
+                      <span className="text-[10px] font-black uppercase text-emerald-600 tracking-widest">Faturação Atual</span>
+                      <h4 className="text-2xl md:text-3xl font-black text-emerald-700 mt-2 italic">R$ {metrics.totalFaturamento.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</h4>
+                   </div>
+                   <div className="bg-blue-50 p-6 rounded-[2rem] border border-blue-100 shadow-sm">
+                      <span className="text-[10px] font-black uppercase text-blue-600 tracking-widest">Ticket Médio Geral</span>
+                      <h4 className="text-2xl md:text-3xl font-black text-blue-700 mt-2 italic">R$ {metrics.totalVendasCount > 0 ? (metrics.totalFaturamento / metrics.totalVendasCount).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0,00'}</h4>
+                   </div>
+                   <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-200 shadow-sm">
+                      <span className="text-[10px] font-black uppercase text-slate-600 tracking-widest">Projeção de Faturação</span>
+                      <h4 className="text-2xl md:text-3xl font-black text-slate-800 mt-2 italic">R$ {((metrics.totalVendasCount > 0 ? (metrics.totalFaturamento / metrics.totalVendasCount) : 0) * metrics.projecao).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</h4>
+                   </div>
+                 </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+
+      // 8. RENDERIZAÇÃO PRINCIPAL
+      return (
+        <div className="flex h-[100dvh] w-screen bg-slate-50 text-slate-800 font-sans overflow-hidden">
+          {toastMessage && (
+            <div className={`fixed top-6 left-1/2 -translate-x-1/2 z-[100] px-6 py-3 rounded-full font-black uppercase text-[10px] md:text-xs tracking-widest shadow-2xl flex items-center gap-3 border animate-bounce text-center ${toastType === 'error' ? 'bg-rose-900 text-white border-rose-700 w-[90%] max-w-2xl' : 'bg-slate-900 text-white border-slate-700'}`}>
+              <span>{toastMessage}</span>
+            </div>
+          )}
+
+          {/* Modal Detalhes de Venda */}
+          {selectedSaleDetails && (
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[100] flex items-center justify-center p-4">
+              <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-2xl max-w-xl w-full p-6 md:p-8 space-y-6 max-h-[90vh] overflow-y-auto custom-scrollbar">
+                <div className="flex justify-between items-center border-b pb-4">
+                  <div>
+                    <h3 className="text-lg font-black uppercase text-slate-900 italic">Detalhes da Venda</h3>
+                    <p className="text-[10px] text-slate-400 font-bold">Informações completas do cliente e da OS</p>
+                  </div>
+                  <button onClick={() => setSelectedSaleDetails(null)} className="w-10 h-10 bg-slate-100 hover:bg-slate-200 rounded-full flex items-center justify-center text-slate-600 font-bold cursor-pointer">✕</button>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                  <div className="bg-slate-50 p-3 rounded-2xl">
+                    <span className="text-[9px] font-black uppercase text-slate-400">Cliente</span>
+                    <p className="font-bold text-slate-800 text-sm mt-0.5">{selectedSaleDetails.cliente}</p>
+                  </div>
+                  <div className="bg-slate-50 p-3 rounded-2xl">
+                    <span className="text-[9px] font-black uppercase text-slate-400">Telefones Contatos</span>
+                    <p className="font-bold text-emerald-600 text-sm mt-0.5 flex items-center gap-1.5"><Icon name="phone" className="w-3.5 h-3.5"/> {selectedSaleDetails.telefone || 'Não informado'}</p>
+                  </div>
+                  <div className="bg-slate-50 p-3 rounded-2xl">
+                    <span className="text-[9px] font-black uppercase text-slate-400">Plano Contratado</span>
+                    <p className="font-bold text-indigo-600 text-sm mt-0.5">{selectedSaleDetails.plano || 'Não informado'}</p>
+                  </div>
+                  <div className="bg-slate-50 p-3 rounded-2xl">
+                    <span className="text-[9px] font-black uppercase text-slate-400">Status Eficácia</span>
+                    <p className="font-bold text-slate-800 text-sm mt-0.5">{selectedSaleDetails.statusAgendamento || selectedSaleDetails.status || 'Não informado'}</p>
+                  </div>
+                  <div className="bg-slate-50 p-3 rounded-2xl sm:col-span-2">
+                    <span className="text-[9px] font-black uppercase text-slate-400">Endereço</span>
+                    <p className="font-bold text-slate-800 text-sm mt-0.5">{selectedSaleDetails.cidade || 'Não informado'}</p>
+                  </div>
+                  <div className="bg-amber-50/60 p-3 rounded-2xl border border-amber-100 sm:col-span-2">
+                    <span className="text-[9px] font-black uppercase text-amber-700">Obs Endereço</span>
+                    <p className="font-medium text-slate-700 text-xs mt-1 leading-relaxed">{selectedSaleDetails.obsEndereco || 'Nenhuma observação de endereço registada.'}</p>
+                  </div>
+                </div>
+                <div className="bg-emerald-50/60 p-4 rounded-2xl border border-emerald-100">
+                  <span className="text-[9px] font-black uppercase text-emerald-700">Obs da Venda</span>
+                  <p className="font-medium text-slate-700 text-xs mt-1 leading-relaxed">{selectedSaleDetails.obsVenda || 'Nenhuma observação de venda registada.'}</p>
+                </div>
+                <button onClick={() => setSelectedSaleDetails(null)} className="w-full bg-slate-900 hover:bg-slate-800 text-white font-black uppercase text-xs py-3.5 rounded-2xl shadow cursor-pointer">Fechar</button>
+              </div>
+            </div>
+          )}
+
+          <input type="file" id="inputVendas" accept=".csv, .xlsx, .xls" onChange={(e) => handleCsvUpload(e, 'atual')} className="hidden" />
+          <input type="file" id="inputVendasMesAnterior" accept=".csv, .xlsx, .xls" onChange={(e) => handleCsvUpload(e, 'anterior')} className="hidden" />
+          <input type="file" id="inputChurn" accept=".csv, .xlsx, .xls" onChange={(e) => handleSpecificCsvUpload(e, 'churn')} className="hidden" />
+          <input type="file" id="inputFpd" accept=".csv, .xlsx, .xls" onChange={(e) => handleSpecificCsvUpload(e, 'fpd')} className="hidden" />
+          <input type="file" id="inputCancelamento" accept=".csv, .xlsx, .xls" onChange={(e) => handleSpecificCsvUpload(e, 'cancelamento')} className="hidden" />
+          <input type="file" id="inputQualidade" accept=".csv, .xlsx, .xls" onChange={(e) => handleSpecificCsvUpload(e, 'qualidade')} className="hidden" />
+
+          {activeTab === 'capa' ? (
+            <div className="w-full h-full bg-[#0a0f1a] flex flex-col items-center justify-center relative overflow-hidden p-6">
+              <div className="absolute inset-0 pointer-events-none">
+                <div className="absolute top-[-20%] left-[-10%] w-[300px] md:w-[600px] h-[300px] md:h-[600px] bg-emerald-600/15 rounded-full blur-[80px] md:blur-[120px]"></div>
+                <div className="absolute bottom-[-10%] right-[-10%] w-[300px] md:w-[600px] h-[300px] md:h-[600px] bg-blue-600/10 rounded-full blur-[80px] md:blur-[120px]"></div>
+              </div>
+              <div className="z-10 text-center px-4 md:px-6 w-full max-w-5xl overflow-y-auto">
+                <div className="mb-6 md:mb-8 flex justify-center mt-8">
+                  <div className="w-20 h-20 md:w-24 md:h-24 bg-emerald-500 rounded-[2rem] md:rounded-[2.5rem] flex items-center justify-center shadow-2xl shadow-emerald-500/40 rotate-12">
+                    <Icon name="zap" className="w-10 h-10 md:w-12 md:h-12 text-white fill-white" />
+                  </div>
+                </div>
+                <h1 className="text-5xl md:text-8xl font-black text-white italic uppercase tracking-tighter mb-2 md:mb-4">
+                  Light <span className="text-emerald-500">BI</span>
+                </h1>
+                <p className="text-slate-400 font-bold uppercase tracking-[0.2em] md:tracking-[0.5em] mb-8 md:mb-10 text-[9px] md:text-xs">
+                  Inteligência Operacional Telecom
+                </p>
+                <div className="mb-10 md:mb-12 flex flex-col sm:flex-row justify-center gap-4">
+                  <button onClick={() => document.getElementById('inputVendas').click()} className="bg-emerald-500 text-slate-950 px-6 md:px-8 py-4 rounded-[2rem] md:rounded-[2.5rem] font-black uppercase tracking-widest text-[10px] md:text-xs flex items-center justify-center gap-3 shadow-xl hover:bg-emerald-400 transition-all cursor-pointer">
+                    <Icon name="file-up" className="w-4 h-4 md:w-5 md:h-5" /> <span>CSV Mês Atual</span>
+                  </button>
+                  <button onClick={() => document.getElementById('inputVendasMesAnterior').click()} className="bg-blue-600 text-white px-6 md:px-8 py-4 rounded-[2rem] md:rounded-[2.5rem] font-black uppercase tracking-widest text-[10px] md:text-xs flex items-center justify-center gap-3 shadow-xl hover:bg-blue-500 transition-all cursor-pointer">
+                    <Icon name="history" className="w-4 h-4 md:w-5 md:h-5" /> <span>CSV Mês Anterior</span>
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 mx-auto pb-8">
+                  {MENU_ITEMS.map((item) => (
+                    <button key={item.id} onClick={() => setActiveTab(item.id)} className="bg-white/5 border border-white/10 p-4 md:p-5 rounded-[1.5rem] md:rounded-[2rem] transition-all flex flex-col items-center gap-2 md:gap-3 group hover:border-emerald-500 cursor-pointer">
+                      <div className="w-8 h-8 md:w-10 md:h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center text-emerald-400 group-hover:bg-emerald-500 group-hover:text-white">
+                        <Icon name={item.icon} className="w-4 h-4 md:w-5 md:h-5" />
+                      </div>
+                      <span className="text-[8px] md:text-[9px] font-black text-white/70 uppercase tracking-widest text-center">{item.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* SIDEBAR RESPONSIVA */}
+              {isSidebarOpen && <div className="fixed inset-0 bg-slate-900/40 z-40 md:hidden backdrop-blur-sm" onClick={() => setIsSidebarOpen(false)}></div>}
+              <nav className={`fixed md:relative h-full bg-white border-r border-slate-100 flex flex-col z-50 shadow-2xl md:shadow-sm shrink-0 transition-transform duration-300 ${isSidebarOpen ? 'translate-x-0 w-64 md:w-72' : '-translate-x-full md:translate-x-0 md:w-20'}`}>
+                <div className="p-4 md:p-5 border-b border-slate-50 flex items-center justify-between">
+                  <div onClick={() => setActiveTab('capa')} className="cursor-pointer flex items-center gap-3">
+                    <div className="w-8 h-8 md:w-9 md:h-9 bg-slate-900 rounded-xl flex items-center justify-center text-white font-black italic shrink-0">L</div>
+                    {isSidebarOpen && <span className="font-black text-slate-800 uppercase italic tracking-tighter text-sm md:text-base">Light BI</span>}
+                  </div>
+                  <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl cursor-pointer transition hidden md:block">
+                    <Icon name={isSidebarOpen ? "panel-left-close" : "panel-left-open"} className="w-4 h-4" />
+                  </button>
+                  <button onClick={() => setIsSidebarOpen(false)} className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg md:hidden">
+                    <Icon name="x" className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="flex-1 px-3 py-4 space-y-1 overflow-y-auto custom-scrollbar">
+                  {MENU_ITEMS.map((item) => (
+                    <button key={item.id} onClick={() => { setActiveTab(item.id); if(window.innerWidth <= 768) setIsSidebarOpen(false); }} className={`w-full flex items-center ${isSidebarOpen ? 'justify-start px-4' : 'justify-center'} py-3 rounded-2xl transition-all cursor-pointer ${activeTab === item.id ? 'bg-emerald-500 text-white shadow-md font-black' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-700'}`}>
+                      <Icon name={item.icon} className="w-4 h-4 md:w-5 md:h-5 shrink-0" />
+                      {isSidebarOpen && <span className="text-[10px] md:text-xs uppercase tracking-widest ml-4">{item.label}</span>}
+                    </button>
+                  ))}
+                </div>
+              </nav>
+
+              <main className="flex-1 flex flex-col h-full overflow-hidden bg-slate-50 relative w-full">
+                {/* HEADER */}
+                <header className="h-16 md:h-20 px-4 md:px-8 flex items-center justify-between bg-white border-b border-slate-100 shrink-0 sticky top-0 z-10 w-full">
+                  <div className="flex items-center gap-3">
+                    <button onClick={() => setIsSidebarOpen(true)} className="md:hidden p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl cursor-pointer shadow-sm">
+                      <Icon name="menu" className="w-5 h-5" />
+                    </button>
+                    <h2 className="text-base md:text-xl font-black text-slate-900 uppercase italic tracking-tighter truncate max-w-[140px] sm:max-w-none">
+                      {MENU_ITEMS.find(m => m.id === activeTab)?.label || 'Painel'}
+                    </h2>
+                  </div>
+                  <div className="flex items-center gap-2 md:gap-3">
+                    <button onClick={() => fetchConfigs(false)} className="p-2 md:px-3 md:py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-xl flex items-center gap-2 cursor-pointer shadow-sm border border-emerald-100" title="Sincronizar Nuvem">
+                      <Icon name="refresh-cw" className="w-4 h-4 md:w-4 md:h-4" /> 
+                      <span className="hidden lg:inline text-[9px] font-black uppercase tracking-widest">Sincronizar</span>
+                    </button>
+                    <button onClick={() => document.getElementById('inputVendas').click()} className="bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest px-3 py-2 md:px-4 md:py-2.5 rounded-xl shadow flex items-center gap-2 cursor-pointer">
+                      <Icon name="upload-cloud" className="w-4 h-4 sm:hidden" />
+                      <span className="hidden sm:inline">Carregar Atual</span>
+                    </button>
+                    <button onClick={() => document.getElementById('inputVendasMesAnterior').click()} className="bg-blue-600 hover:bg-blue-700 text-white font-black text-[10px] uppercase tracking-widest px-3 py-2 md:px-4 md:py-2.5 rounded-xl shadow flex items-center gap-2 cursor-pointer">
+                      <Icon name="history" className="w-4 h-4 sm:hidden" />
+                      <span className="hidden sm:inline">Mês Anterior</span>
+                    </button>
+                    <button onClick={() => setActiveTab('capa')} className="p-2 md:p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl cursor-pointer" title="Início">
+                      <Icon name="home" className="w-4 h-4 md:w-5 md:h-5" />
+                    </button>
+                  </div>
+                </header>
+
+                <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 md:space-y-8 custom-scrollbar w-full">
+                  {activeTab === 'vendas' && renderVendasTab()}
+                  {activeTab === 'equipes' && renderEquipesTab()}
+                  {activeTab === 'vendedores' && renderVendedoresTab()}
+                  {activeTab === 'churn' && renderChurnTab()}
+                  {activeTab === 'fpd' && renderFpdTab()}
+                  {activeTab === 'eficacia' && renderEficaciaTab()}
+                  {activeTab === 'cancelamento' && renderCancelamentoTab()}
+                  {activeTab === 'qualidade' && renderQualidadeTab()}
+                  {activeTab === 'financeiro' && renderFinanceiroTab()}
+                  {activeTab === 'metas' && renderMetasTab()}
+                  
+                  {['vendas', 'equipes', 'vendedores', 'churn', 'fpd', 'eficacia', 'cancelamento', 'qualidade', 'financeiro', 'metas'].indexOf(activeTab) === -1 && (
+                    <div className="bg-white p-8 md:p-12 rounded-[2.5rem] border border-slate-100 shadow-sm text-center max-w-2xl mx-auto">
+                      <h3 className="text-xl md:text-2xl font-black text-slate-800 mb-2 uppercase italic">Painel {MENU_ITEMS.find(m => m.id === activeTab)?.label}</h3>
+                      <p className="text-[10px] md:text-xs text-slate-400 font-bold uppercase tracking-wider">Módulo pronto e integrado ao Light BI Telecom.</p>
+                    </div>
+                  )}
+                </div>
+              </main>
+            </>
+          )}
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(
+      <ErrorBoundary><App /></ErrorBoundary>
+    );
+  </script>
+</body>
+</html>
