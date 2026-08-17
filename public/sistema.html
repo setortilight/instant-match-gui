@@ -617,31 +617,36 @@
         let configsChannel;
         let storageChannel;
 
-        // Prevenção de SecurityError: Bloqueia WebSockets dentro do Canvas/Iframe
-        const isCanvasPreview = window !== window.parent || window.location.hostname === '' || window.location.hostname.includes('sandbox');
-
-        if (isCanvasPreview) {
-          console.warn("Ambiente restrito detetado. WebSockets desligados. A utilizar Polling (15s).");
-          pollingInterval = setInterval(() => { fetchConfigs(true); }, 15000);
-        } else if (supabase) {
+        // Realtime sempre ativo (funciona também dentro de iframe/preview)
+        if (supabase) {
           try {
             configsChannel = supabase
-              .channel('public:configuracoes')
+              .channel('realtime:configuracoes')
               .on('postgres_changes', { event: '*', schema: 'public', table: 'configuracoes' }, () => fetchConfigs(true))
-              .subscribe();
+              .subscribe((status) => console.log('Realtime configuracoes:', status));
 
             storageChannel = supabase
-              .channel('storage:objects')
+              .channel('realtime:storage-objects')
               .on('postgres_changes', { event: '*', schema: 'storage', table: 'objects' }, () => fetchConfigs(true))
-              .subscribe();
+              .subscribe((status) => console.log('Realtime storage:', status));
           } catch (err) {
              console.error("Falha ao iniciar canais do Supabase:", err);
           }
-          pollingInterval = setInterval(() => { fetchConfigs(true); }, 15000);
+          // Rede de segurança: polling curto caso o WebSocket seja bloqueado
+          pollingInterval = setInterval(() => { fetchConfigs(true); }, 5000);
         }
+
+        // Atualiza imediatamente ao voltar para a aba/janela
+        const refreshNow = () => { if (document.visibilityState === 'visible') fetchConfigs(true); };
+        document.addEventListener('visibilitychange', refreshNow);
+        window.addEventListener('focus', refreshNow);
+        window.addEventListener('online', refreshNow);
 
         return () => {
           if (pollingInterval) clearInterval(pollingInterval);
+          document.removeEventListener('visibilitychange', refreshNow);
+          window.removeEventListener('focus', refreshNow);
+          window.removeEventListener('online', refreshNow);
           if (supabase) {
             try {
                if (configsChannel) supabase.removeChannel(configsChannel);
@@ -650,6 +655,7 @@
           }
         };
       }, []);
+
 
       // 4. MÉTODOS DE AÇÃO (UPLOAD E SALVAR)
       const salvarConfiguracoesGerais = async () => {
