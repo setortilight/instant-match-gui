@@ -558,11 +558,9 @@
              console.log('Falha ao procurar tabela configuracoes...');
           }
           if (!json) {
-            try {
-              const { data } = await supabase.storage.from(BUCKET_NAME).download('configs/settings.json');
-              if (data) json = JSON.parse(await data.text());
-            } catch (e) {}
+            json = await downloadJsonNoCache('configs/settings.json');
           }
+
         }
 
         if (!json) {
