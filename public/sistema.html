@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
   <title>Light BI Telecom - Gestão de Vendas Colaborativo</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -90,8 +92,37 @@
     const BUCKET_NAME = "bi-files";
 
     const supabase = (SUPABASE_URL && SUPABASE_URL !== "SUA_URL_DO_SUPABASE")
-      ? window.supabase?.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+      ? window.supabase?.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+          realtime: { params: { eventsPerSecond: 10 } },
+          global: {
+            // Evita cache do navegador/CDN nas leituras (metas sempre frescas)
+            fetch: (input, init = {}) => {
+              const headers = new Headers(init.headers || {});
+              headers.set('Cache-Control', 'no-cache, no-store, max-age=0');
+              headers.set('Pragma', 'no-cache');
+              return fetch(input, { ...init, headers, cache: 'no-store' });
+            }
+          }
+        })
       : null;
+
+    // Baixa um JSON do Storage sempre sem cache (usa timestamp na URL pública)
+    const downloadJsonNoCache = async (path) => {
+      if (!supabase) return null;
+      try {
+        const { data: pub } = supabase.storage.from(BUCKET_NAME).getPublicUrl(path);
+        if (pub?.publicUrl) {
+          const res = await fetch(`${pub.publicUrl}?t=${Date.now()}`, { cache: 'no-store' });
+          if (res.ok) return await res.json();
+        }
+      } catch (e) {}
+      try {
+        const { data } = await supabase.storage.from(BUCKET_NAME).download(`${path}?t=${Date.now()}`);
+        if (data) return JSON.parse(await data.text());
+      } catch (e) {}
+      return null;
+    };
+
 
     if (window.Chart && window.ChartDataLabels) {
       window.Chart.register(window.ChartDataLabels);
@@ -529,11 +560,9 @@
              console.log('Falha ao procurar tabela configuracoes...');
           }
           if (!json) {
-            try {
-              const { data } = await supabase.storage.from(BUCKET_NAME).download('configs/settings.json');
-              if (data) json = JSON.parse(await data.text());
-            } catch (e) {}
+            json = await downloadJsonNoCache('configs/settings.json');
           }
+
         }
 
         if (!json) {
@@ -571,11 +600,9 @@
             for (const file of filesToFetch) {
               let parsed = null;
               if (supabase) {
-                try {
-                  const { data } = await supabase.storage.from(BUCKET_NAME).download(`configs/${file.key}.json`);
-                  if (data) parsed = JSON.parse(await data.text());
-                } catch(e) {}
+                parsed = await downloadJsonNoCache(`configs/${file.key}.json`);
               }
+
               if (!parsed) {
                 const loc = localStorage.getItem(file.localKey);
                 if (loc) { try { parsed = JSON.parse(loc); } catch(e){} }
@@ -592,31 +619,36 @@
         let configsChannel;
         let storageChannel;
 
-        // Prevenção de SecurityError: Bloqueia WebSockets dentro do Canvas/Iframe
-        const isCanvasPreview = window !== window.parent || window.location.hostname === '' || window.location.hostname.includes('sandbox');
-
-        if (isCanvasPreview) {
-          console.warn("Ambiente restrito detetado. WebSockets desligados. A utilizar Polling (15s).");
-          pollingInterval = setInterval(() => { fetchConfigs(true); }, 15000);
-        } else if (supabase) {
+        // Realtime sempre ativo (funciona também dentro de iframe/preview)
+        if (supabase) {
           try {
             configsChannel = supabase
-              .channel('public:configuracoes')
+              .channel('realtime:configuracoes')
               .on('postgres_changes', { event: '*', schema: 'public', table: 'configuracoes' }, () => fetchConfigs(true))
-              .subscribe();
+              .subscribe((status) => console.log('Realtime configuracoes:', status));
 
             storageChannel = supabase
-              .channel('storage:objects')
+              .channel('realtime:storage-objects')
               .on('postgres_changes', { event: '*', schema: 'storage', table: 'objects' }, () => fetchConfigs(true))
-              .subscribe();
+              .subscribe((status) => console.log('Realtime storage:', status));
           } catch (err) {
              console.error("Falha ao iniciar canais do Supabase:", err);
           }
-          pollingInterval = setInterval(() => { fetchConfigs(true); }, 15000);
+          // Rede de segurança: polling curto caso o WebSocket seja bloqueado
+          pollingInterval = setInterval(() => { fetchConfigs(true); }, 5000);
         }
+
+        // Atualiza imediatamente ao voltar para a aba/janela
+        const refreshNow = () => { if (document.visibilityState === 'visible') fetchConfigs(true); };
+        document.addEventListener('visibilitychange', refreshNow);
+        window.addEventListener('focus', refreshNow);
+        window.addEventListener('online', refreshNow);
 
         return () => {
           if (pollingInterval) clearInterval(pollingInterval);
+          document.removeEventListener('visibilitychange', refreshNow);
+          window.removeEventListener('focus', refreshNow);
+          window.removeEventListener('online', refreshNow);
           if (supabase) {
             try {
                if (configsChannel) supabase.removeChannel(configsChannel);
@@ -625,6 +657,7 @@
           }
         };
       }, []);
+
 
       // 4. MÉTODOS DE AÇÃO (UPLOAD E SALVAR)
       const salvarConfiguracoesGerais = async () => {
@@ -644,10 +677,11 @@
 
           try {
             const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
-            const { error } = await supabase.storage.from(BUCKET_NAME).upload('configs/settings.json', blob, { upsert: true, contentType: 'application/json' });
+            const { error } = await supabase.storage.from(BUCKET_NAME).upload('configs/settings.json', blob, { upsert: true, contentType: 'application/json', cacheControl: '0' });
             if (error) throw error;
             sucessoStorage = true;
           } catch(e) { mensagensErro += `Storage: ${e.message || 'Erro'}.`; }
+
         }
 
         if (sucessoStorage || sucessoDB) {
@@ -697,7 +731,7 @@
                 if (supabase) {
                   try {
                     const blob = new Blob([JSON.stringify(parsed)], { type: 'application/json' });
-                    await supabase.storage.from(BUCKET_NAME).upload(`configs/${dataType}.json`, blob, { upsert: true, contentType: 'application/json' });
+                    await supabase.storage.from(BUCKET_NAME).upload(`configs/${dataType}.json`, blob, { upsert: true, contentType: 'application/json', cacheControl: '0' });
                   } catch(err) { console.log('Envio Supabase bloqueado', err); }
                 }
                 showToast(`${parsed.length} registos processados!`);
@@ -878,7 +912,7 @@
                 if (supabase) {
                   try {
                     const blob = new Blob([JSON.stringify(parsed)], { type: 'application/json' });
-                    await supabase.storage.from(BUCKET_NAME).upload(`configs/${fileName}.json`, blob, { upsert: true, contentType: 'application/json' });
+                    await supabase.storage.from(BUCKET_NAME).upload(`configs/${fileName}.json`, blob, { upsert: true, contentType: 'application/json', cacheControl: '0' });
                   } catch(e) { console.log('Envio bloqueado', e); }
                 }
                 showToast(`${parsed.length} vendas gravadas e sincronizadas!`, 'success');
