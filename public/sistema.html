@@ -1054,6 +1054,15 @@
 
       const rankingVendedores = useMemo(() => {
         const map = {};
+        // Vendedores cadastrados na aba Metas/Config aparecem mesmo sem vendas no mês
+        Object.entries(equipeVendedoresMap || {}).forEach(([eq, lista]) => {
+          if (String(eq).toUpperCase().includes('LOJA')) return;
+          if (selectedTeamFilter !== 'TODAS' && eq !== selectedTeamFilter) return;
+          (lista || []).forEach(v => {
+            if (!v) return;
+            if (!map[v]) map[v] = { vendedor: v, equipe: eq, total: 0, mixHighCount: 0, valorTotal: 0, instaladas: 0, qtdVendasAnterior: 0, cadastrado: true };
+          });
+        });
         validSales.forEach(sale => {
           if (sale.equipe?.toUpperCase().includes('LOJA')) return;
           if (selectedTeamFilter !== 'TODAS' && sale.equipe !== selectedTeamFilter) return;
@@ -1081,7 +1090,7 @@
         const uTotal = Number(uteisTotal) > 0 ? Number(uteisTotal) : 1;
 
         return Object.values(map)
-          .filter(s => s.total > 0)
+          .filter(s => s.total > 0 || s.cadastrado)
           .filter(s => s.vendedor.toLowerCase().includes(searchTerm.toLowerCase()) || s.equipe.toLowerCase().includes(searchTerm.toLowerCase()))
           .map(s => {
             const duVal = s.total / uDecorridos;
@@ -1100,7 +1109,7 @@
             };
           })
           .sort((a, b) => b.total - a.total);
-      }, [validSales, validPreviousSales, searchTerm, selectedTeamFilter, uteisDecorridos, uteisTotal]);
+      }, [validSales, validPreviousSales, searchTerm, selectedTeamFilter, uteisDecorridos, uteisTotal, equipeVendedoresMap]);
 
       const tendenciaStats = useMemo(() => {
         let emQueda = 0; let emAlta = 0;
