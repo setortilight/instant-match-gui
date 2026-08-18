@@ -443,6 +443,8 @@
       
       const [eficaciaSubTab, setEficaciaSubTab] = useState('dashboard');
       const [eficaciaDataSource, setEficaciaDataSource] = useState('atual');
+      const [eficaciaPeriodoInicio, setEficaciaPeriodoInicio] = useState('');
+      const [eficaciaPeriodoFim, setEficaciaPeriodoFim] = useState('');
 
       const [salesData, setSalesData] = useState([]);
       const [previousMonthSalesData, setPreviousMonthSalesData] = useState([]);
@@ -946,6 +948,22 @@
         return list;
       }, [validPreviousSales, selectedTeamFilter, selectedSellerFilter]);
 
+      // Filtro de período (data da venda) da aba Eficácia
+      const eficaciaPeriodoAtivo = !!(eficaciaPeriodoInicio || eficaciaPeriodoFim);
+      const getEficaciaBase = (atual, anterior) => {
+        if (!eficaciaPeriodoAtivo) return eficaciaDataSource === 'atual' ? atual : anterior;
+        const combinado = [...atual, ...anterior];
+        return combinado.filter(item => {
+          const iso = item.dataVendaIso;
+          if (!iso) return false;
+          if (eficaciaPeriodoInicio && iso < eficaciaPeriodoInicio) return false;
+          if (eficaciaPeriodoFim && iso > eficaciaPeriodoFim) return false;
+          return true;
+        });
+      };
+
+
+
       const availableSellers = useMemo(() => {
         const sellers = new Set();
         validSales.forEach(v => {
@@ -1176,7 +1194,7 @@
       }, [metrics, uteisDecorridos]);
 
       const dashboardEficaciaStats = useMemo(() => {
-        const baseData = eficaciaDataSource === 'atual' ? dashboardFilteredSales : dashboardFilteredPreviousSales;
+        const baseData = getEficaciaBase(dashboardFilteredSales, dashboardFilteredPreviousSales);
         let list = baseData;
         if (filterEquipe !== 'TODAS') list = list.filter(item => item.equipe === filterEquipe);
 
@@ -1202,7 +1220,7 @@
           fechado: { count: fechado, percent: getPercent(fechado) },
           tecnico: { count: tecnico, percent: getPercent(tecnico) }
         };
-      }, [dashboardFilteredSales, dashboardFilteredPreviousSales, eficaciaDataSource, filterEquipe]);
+      }, [dashboardFilteredSales, dashboardFilteredPreviousSales, eficaciaDataSource, eficaciaPeriodoInicio, eficaciaPeriodoFim, filterEquipe]);
 
       const eficaciaFilterOptions = useMemo(() => {
         const equipes = new Set();
@@ -1227,7 +1245,7 @@
       }, [validSales, validPreviousSales, eficaciaDataSource]);
 
       const filteredProcessData = useMemo(() => {
-        const baseSales = eficaciaDataSource === 'atual' ? validSales : validPreviousSales;
+        const baseSales = getEficaciaBase(validSales, validPreviousSales);
         return baseSales.filter(item => {
           if (filterEquipe !== 'TODAS' && item.equipe !== filterEquipe) return false;
           const stCombinado = item.statusAgendamento || item.status || '';
@@ -1259,7 +1277,7 @@
           }
           return true;
         });
-      }, [validSales, validPreviousSales, eficaciaDataSource, filterEquipe, filterStatus, filterCardStatusKey, filterVendedor, filterTurno, filterDataVendaInicio, filterDataVendaFim, filterDataAgendInicio, filterDataAgendFim, processSearchText]);
+      }, [validSales, validPreviousSales, eficaciaDataSource, eficaciaPeriodoInicio, eficaciaPeriodoFim, filterEquipe, filterStatus, filterCardStatusKey, filterVendedor, filterTurno, filterDataVendaInicio, filterDataVendaFim, filterDataAgendInicio, filterDataAgendFim, processSearchText]);
 
       const sortedProcessData = useMemo(() => {
         if (!processSortConfig.key) return filteredProcessData;
@@ -1765,7 +1783,7 @@
       );
 
       const renderEficaciaTab = () => {
-        const baseEficaciaData = eficaciaDataSource === 'atual' ? dashboardFilteredSales : dashboardFilteredPreviousSales;
+        const baseEficaciaData = getEficaciaBase(dashboardFilteredSales, dashboardFilteredPreviousSales);
         const currentEficaciaData = filterEquipe === 'TODAS' ? baseEficaciaData : baseEficaciaData.filter(s => s.equipe === filterEquipe);
 
         return (
@@ -1781,6 +1799,17 @@
                   <button onClick={() => setEficaciaDataSource('atual')} className={`px-4 py-2.5 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-widest transition-all cursor-pointer flex items-center gap-2 ${eficaciaDataSource === 'atual' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200'}`}><Icon name="calendar" className="w-3.5 h-3.5" /> Mês Atual</button>
                   <button onClick={() => setEficaciaDataSource('anterior')} className={`px-4 py-2.5 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-widest transition-all cursor-pointer flex items-center gap-2 ${eficaciaDataSource === 'anterior' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200'}`}><Icon name="history" className="w-3.5 h-3.5" /> Mês Anterior</button>
                 </div>
+
+                <div className={`flex w-full sm:w-auto items-center gap-2 p-1.5 rounded-2xl border ${eficaciaPeriodoAtivo ? 'bg-blue-50 border-blue-200' : 'bg-slate-100 border-slate-200'}`}>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-500 pl-2 hidden md:block">Período</span>
+                  <input type="date" value={eficaciaPeriodoInicio} onChange={(e) => setEficaciaPeriodoInicio(e.target.value)} className="bg-white border border-slate-200 px-2 py-1.5 rounded-xl text-[11px] font-bold text-slate-700 outline-none cursor-pointer" />
+                  <span className="text-[10px] font-bold text-slate-400">até</span>
+                  <input type="date" value={eficaciaPeriodoFim} onChange={(e) => setEficaciaPeriodoFim(e.target.value)} className="bg-white border border-slate-200 px-2 py-1.5 rounded-xl text-[11px] font-bold text-slate-700 outline-none cursor-pointer" />
+                  {eficaciaPeriodoAtivo && (
+                    <button onClick={() => { setEficaciaPeriodoInicio(''); setEficaciaPeriodoFim(''); }} className="px-3 py-1.5 rounded-xl text-[10px] font-black uppercase text-rose-600 hover:bg-rose-100 cursor-pointer">Limpar</button>
+                  )}
+                </div>
+
               </div>
 
               {eficaciaSubTab === 'dashboard' && (
