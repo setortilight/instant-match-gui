@@ -2228,6 +2228,37 @@
                         </div>
                       </div>
                     )}
+                    {configEquipeSel !== 'TODAS' && (
+                      <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
+                        <label className="block text-[10px] font-black uppercase text-slate-400">Vendedores da Equipe ({(equipeVendedoresMap[configEquipeSel] || []).length})</label>
+                        <div className="flex gap-2">
+                          <input
+                            list="lista-vendedores-csv"
+                            value={novoVendedorNome}
+                            onChange={(e) => setNovoVendedorNome(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddVendedorEquipe(configEquipeSel, novoVendedorNome); } }}
+                            placeholder="Nome do vendedor"
+                            className="flex-1 bg-white border border-slate-200 px-4 py-2 rounded-xl text-xs font-bold text-slate-700 outline-none focus:border-emerald-500"
+                          />
+                          <datalist id="lista-vendedores-csv">
+                            {availableSellers.map(v => <option key={v} value={v} />)}
+                          </datalist>
+                          <button onClick={() => handleAddVendedorEquipe(configEquipeSel, novoVendedorNome)} className="bg-emerald-500 hover:bg-emerald-600 text-white font-black uppercase text-[10px] px-4 rounded-xl cursor-pointer">Adicionar</button>
+                        </div>
+                        {(equipeVendedoresMap[configEquipeSel] || []).length === 0 ? (
+                          <p className="text-[11px] text-slate-500">Nenhum vendedor cadastrado nesta equipe.</p>
+                        ) : (
+                          <div className="flex flex-wrap gap-2">
+                            {(equipeVendedoresMap[configEquipeSel] || []).map(v => (
+                              <span key={v} className="flex items-center gap-2 bg-white border border-slate-200 rounded-full pl-3 pr-1 py-1 text-[11px] font-bold text-slate-700">
+                                {v}
+                                <button onClick={() => handleRemoveVendedorEquipe(configEquipeSel, v)} title="Remover" className="w-5 h-5 rounded-full bg-rose-100 text-rose-600 font-black leading-none cursor-pointer hover:bg-rose-200">×</button>
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 
