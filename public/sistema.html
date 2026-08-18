@@ -1295,6 +1295,8 @@
         return sortedProcessData.slice(start, start + processItemsPerPage);
       }, [sortedProcessData, processCurrentPage, processItemsPerPage]);
 
+      useEffect(() => { setProcessCurrentPage(1); }, [filteredProcessData.length]);
+
       // 6. EFEITO DOS GRÁFICOS (CHART.JS)
       useEffect(() => {
         if (!window.Chart) return;
@@ -1967,6 +1969,26 @@
                         ))}
                       </tbody>
                     </table>
+                  </div>
+
+                  <div className="px-4 md:px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Exibir</span>
+                      {[25, 50, 100, 250].map(n => (
+                        <button key={n} onClick={() => { setProcessItemsPerPage(n); setProcessCurrentPage(1); }} className={`px-3 py-1.5 rounded-xl text-[10px] font-black transition cursor-pointer ${processItemsPerPage === n ? 'bg-emerald-500 text-white shadow' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-100'}`}>{n}</button>
+                      ))}
+                      <button onClick={() => { setProcessItemsPerPage(sortedProcessData.length || 1); setProcessCurrentPage(1); }} className={`px-3 py-1.5 rounded-xl text-[10px] font-black transition cursor-pointer ${processItemsPerPage >= sortedProcessData.length && sortedProcessData.length > 0 ? 'bg-emerald-500 text-white shadow' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-100'}`}>Todos</button>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                        {sortedProcessData.length === 0 ? '0' : `${(processCurrentPage - 1) * processItemsPerPage + 1}–${Math.min(processCurrentPage * processItemsPerPage, sortedProcessData.length)}`} de {sortedProcessData.length}
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <button disabled={processCurrentPage <= 1} onClick={() => setProcessCurrentPage(p => Math.max(1, p - 1))} className="px-3 py-1.5 rounded-xl text-[10px] font-black uppercase bg-white border border-slate-200 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 cursor-pointer">Anterior</button>
+                        <span className="text-[10px] font-black text-slate-500 px-2">Pág {processCurrentPage} / {Math.max(1, Math.ceil(sortedProcessData.length / processItemsPerPage))}</span>
+                        <button disabled={processCurrentPage >= Math.ceil(sortedProcessData.length / processItemsPerPage)} onClick={() => setProcessCurrentPage(p => p + 1)} className="px-3 py-1.5 rounded-xl text-[10px] font-black uppercase bg-white border border-slate-200 text-slate-600 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 cursor-pointer">Próxima</button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </>
