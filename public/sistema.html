@@ -948,6 +948,22 @@
         return list;
       }, [validPreviousSales, selectedTeamFilter, selectedSellerFilter]);
 
+      // Filtro de período (data da venda) da aba Eficácia
+      const eficaciaPeriodoAtivo = !!(eficaciaPeriodoInicio || eficaciaPeriodoFim);
+      const getEficaciaBase = (atual, anterior) => {
+        if (!eficaciaPeriodoAtivo) return eficaciaDataSource === 'atual' ? atual : anterior;
+        const combinado = [...atual, ...anterior];
+        return combinado.filter(item => {
+          const iso = item.dataVendaIso;
+          if (!iso) return false;
+          if (eficaciaPeriodoInicio && iso < eficaciaPeriodoInicio) return false;
+          if (eficaciaPeriodoFim && iso > eficaciaPeriodoFim) return false;
+          return true;
+        });
+      };
+
+
+
       const availableSellers = useMemo(() => {
         const sellers = new Set();
         validSales.forEach(v => {
