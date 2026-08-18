@@ -1295,6 +1295,8 @@
         return sortedProcessData.slice(start, start + processItemsPerPage);
       }, [sortedProcessData, processCurrentPage, processItemsPerPage]);
 
+      useEffect(() => { setProcessCurrentPage(1); }, [filteredProcessData.length]);
+
       // 6. EFEITO DOS GRÁFICOS (CHART.JS)
       useEffect(() => {
         if (!window.Chart) return;
