@@ -990,14 +990,20 @@
             if (v.vendedor) sellers.add(v.vendedor);
           }
         });
+        Object.entries(equipeVendedoresMap || {}).forEach(([eq, lista]) => {
+          if (String(eq).toUpperCase().includes('LOJA')) return;
+          if (selectedTeamFilter !== 'TODAS' && eq !== selectedTeamFilter) return;
+          (lista || []).forEach(v => { if (v) sellers.add(v); });
+        });
         return Array.from(sellers).sort();
-      }, [validSales, selectedTeamFilter]);
+      }, [validSales, selectedTeamFilter, equipeVendedoresMap]);
 
       const availableTeams = useMemo(() => {
         const equipes = new Set();
         validSales.forEach(v => { if (v.equipe) equipes.add(v.equipe); });
+        Object.keys(equipeVendedoresMap || {}).forEach(eq => { if (eq) equipes.add(eq); });
         return Array.from(equipes).sort();
-      }, [validSales]);
+      }, [validSales, equipeVendedoresMap]);
 
       const semanas = [1, 2, 3, 4, 5];
       const weeksDays = { 
