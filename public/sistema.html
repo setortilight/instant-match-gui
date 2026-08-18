@@ -1194,7 +1194,7 @@
       }, [metrics, uteisDecorridos]);
 
       const dashboardEficaciaStats = useMemo(() => {
-        const baseData = eficaciaDataSource === 'atual' ? dashboardFilteredSales : dashboardFilteredPreviousSales;
+        const baseData = getEficaciaBase(dashboardFilteredSales, dashboardFilteredPreviousSales);
         let list = baseData;
         if (filterEquipe !== 'TODAS') list = list.filter(item => item.equipe === filterEquipe);
 
@@ -1220,7 +1220,7 @@
           fechado: { count: fechado, percent: getPercent(fechado) },
           tecnico: { count: tecnico, percent: getPercent(tecnico) }
         };
-      }, [dashboardFilteredSales, dashboardFilteredPreviousSales, eficaciaDataSource, filterEquipe]);
+      }, [dashboardFilteredSales, dashboardFilteredPreviousSales, eficaciaDataSource, eficaciaPeriodoInicio, eficaciaPeriodoFim, filterEquipe]);
 
       const eficaciaFilterOptions = useMemo(() => {
         const equipes = new Set();
@@ -1245,7 +1245,7 @@
       }, [validSales, validPreviousSales, eficaciaDataSource]);
 
       const filteredProcessData = useMemo(() => {
-        const baseSales = eficaciaDataSource === 'atual' ? validSales : validPreviousSales;
+        const baseSales = getEficaciaBase(validSales, validPreviousSales);
         return baseSales.filter(item => {
           if (filterEquipe !== 'TODAS' && item.equipe !== filterEquipe) return false;
           const stCombinado = item.statusAgendamento || item.status || '';
@@ -1277,7 +1277,7 @@
           }
           return true;
         });
-      }, [validSales, validPreviousSales, eficaciaDataSource, filterEquipe, filterStatus, filterCardStatusKey, filterVendedor, filterTurno, filterDataVendaInicio, filterDataVendaFim, filterDataAgendInicio, filterDataAgendFim, processSearchText]);
+      }, [validSales, validPreviousSales, eficaciaDataSource, eficaciaPeriodoInicio, eficaciaPeriodoFim, filterEquipe, filterStatus, filterCardStatusKey, filterVendedor, filterTurno, filterDataVendaInicio, filterDataVendaFim, filterDataAgendInicio, filterDataAgendFim, processSearchText]);
 
       const sortedProcessData = useMemo(() => {
         if (!processSortConfig.key) return filteredProcessData;
@@ -1783,7 +1783,7 @@
       );
 
       const renderEficaciaTab = () => {
-        const baseEficaciaData = eficaciaDataSource === 'atual' ? dashboardFilteredSales : dashboardFilteredPreviousSales;
+        const baseEficaciaData = getEficaciaBase(dashboardFilteredSales, dashboardFilteredPreviousSales);
         const currentEficaciaData = filterEquipe === 'TODAS' ? baseEficaciaData : baseEficaciaData.filter(s => s.equipe === filterEquipe);
 
         return (
