@@ -496,6 +496,8 @@
 
       const [metasEquipeMap, setMetasEquipeMap] = useState({});
       const [metasVendedorMap, setMetasVendedorMap] = useState({});
+      const [equipeVendedoresMap, setEquipeVendedoresMap] = useState({});
+      const [novoVendedorNome, setNovoVendedorNome] = useState('');
       const [configEquipeSel, setConfigEquipeSel] = useState('TODAS');
       const [configVendedorSel, setConfigVendedorSel] = useState('TODOS');
       const [senhaGestor, setSenhaGestor] = useState('1234');
@@ -585,6 +587,7 @@
             if (json.semanasConfig !== undefined) setSemanasConfig(json.semanasConfig);
             if (json.metasEquipeMap !== undefined) setMetasEquipeMap(json.metasEquipeMap);
             if (json.metasVendedorMap !== undefined) setMetasVendedorMap(json.metasVendedorMap);
+            if (json.equipeVendedoresMap !== undefined) setEquipeVendedoresMap(json.equipeVendedoresMap);
             setTimeout(() => { isConfigLoadedRef.current = true; }, 1000);
           }
         }
@@ -664,7 +667,7 @@
       // 4. MÉTODOS DE AÇÃO (UPLOAD E SALVAR)
       const salvarConfiguracoesGerais = async () => {
         showToast('A enviar para a Nuvem...', 'success');
-        const payload = { metaLoja, uteisTotal, uteisDecorridos, senhaGestor, semanasConfig, metasEquipeMap, metasVendedorMap };
+        const payload = { metaLoja, uteisTotal, uteisDecorridos, senhaGestor, semanasConfig, metasEquipeMap, metasVendedorMap, equipeVendedoresMap };
         
         let sucessoStorage = false;
         let sucessoDB = false;
@@ -930,6 +933,21 @@
       const handleSaveMetasEquipe = (team, field, value) => setMetasEquipeMap(prev => ({ ...prev, [team]: { ...(prev[team] || {}), [field]: Number(value) } }));
       const handleSaveMetasVendedor = (seller, field, value) => setMetasVendedorMap(prev => ({ ...prev, [seller]: { ...(prev[seller] || {}), [field]: Number(value) } }));
 
+      const handleAddVendedorEquipe = (team, nome) => {
+        const clean = String(nome || '').trim().toUpperCase();
+        if (!team || team === 'TODAS' || !clean) { showToast('Selecione uma equipe e digite o nome do vendedor.', 'error'); return; }
+        setEquipeVendedoresMap(prev => {
+          const list = prev[team] || [];
+          if (list.some(v => v.toUpperCase() === clean)) return prev;
+          return { ...prev, [team]: [...list, clean].sort() };
+        });
+        setNovoVendedorNome('');
+      };
+
+      const handleRemoveVendedorEquipe = (team, nome) => {
+        setEquipeVendedoresMap(prev => ({ ...prev, [team]: (prev[team] || []).filter(v => v !== nome) }));
+      };
+
       // 5. CÁLCULOS (MEMOS)
       const validSales = useMemo(() => salesData.filter(item => !isInvalidClient(item.cliente)), [salesData]);
       const validPreviousSales = useMemo(() => previousMonthSalesData.filter(item => !isInvalidClient(item.cliente)), [previousMonthSalesData]);
@@ -972,14 +990,20 @@
             if (v.vendedor) sellers.add(v.vendedor);
           }
         });
+        Object.entries(equipeVendedoresMap || {}).forEach(([eq, lista]) => {
+          if (String(eq).toUpperCase().includes('LOJA')) return;
+          if (selectedTeamFilter !== 'TODAS' && eq !== selectedTeamFilter) return;
+          (lista || []).forEach(v => { if (v) sellers.add(v); });
+        });
         return Array.from(sellers).sort();
-      }, [validSales, selectedTeamFilter]);
+      }, [validSales, selectedTeamFilter, equipeVendedoresMap]);
 
       const availableTeams = useMemo(() => {
         const equipes = new Set();
         validSales.forEach(v => { if (v.equipe) equipes.add(v.equipe); });
+        Object.keys(equipeVendedoresMap || {}).forEach(eq => { if (eq) equipes.add(eq); });
         return Array.from(equipes).sort();
-      }, [validSales]);
+      }, [validSales, equipeVendedoresMap]);
 
       const semanas = [1, 2, 3, 4, 5];
       const weeksDays = { 
@@ -1036,6 +1060,15 @@
 
       const rankingVendedores = useMemo(() => {
         const map = {};
+        // Vendedores cadastrados na aba Metas/Config aparecem mesmo sem vendas no mês
+        Object.entries(equipeVendedoresMap || {}).forEach(([eq, lista]) => {
+          if (String(eq).toUpperCase().includes('LOJA')) return;
+          if (selectedTeamFilter !== 'TODAS' && eq !== selectedTeamFilter) return;
+          (lista || []).forEach(v => {
+            if (!v) return;
+            if (!map[v]) map[v] = { vendedor: v, equipe: eq, total: 0, mixHighCount: 0, valorTotal: 0, instaladas: 0, qtdVendasAnterior: 0, cadastrado: true };
+          });
+        });
         validSales.forEach(sale => {
           if (sale.equipe?.toUpperCase().includes('LOJA')) return;
           if (selectedTeamFilter !== 'TODAS' && sale.equipe !== selectedTeamFilter) return;
@@ -1063,7 +1096,7 @@
         const uTotal = Number(uteisTotal) > 0 ? Number(uteisTotal) : 1;
 
         return Object.values(map)
-          .filter(s => s.total > 0)
+          .filter(s => s.total > 0 || s.cadastrado)
           .filter(s => s.vendedor.toLowerCase().includes(searchTerm.toLowerCase()) || s.equipe.toLowerCase().includes(searchTerm.toLowerCase()))
           .map(s => {
             const duVal = s.total / uDecorridos;
@@ -1082,7 +1115,7 @@
             };
           })
           .sort((a, b) => b.total - a.total);
-      }, [validSales, validPreviousSales, searchTerm, selectedTeamFilter, uteisDecorridos, uteisTotal]);
+      }, [validSales, validPreviousSales, searchTerm, selectedTeamFilter, uteisDecorridos, uteisTotal, equipeVendedoresMap]);
 
       const tendenciaStats = useMemo(() => {
         let emQueda = 0; let emAlta = 0;
@@ -2199,6 +2232,37 @@
                           <label className="block text-[10px] font-black uppercase text-slate-400 mb-2">Qtd. Vendedores (Equipa)</label>
                           <input type="number" value={metasEquipeMap[configEquipeSel]?.qtdVendedores ?? ''} onChange={(e) => handleSaveMetasEquipe(configEquipeSel, 'qtdVendedores', e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-2xl font-black text-blue-600 outline-none" placeholder="Ex: 5" />
                         </div>
+                      </div>
+                    )}
+                    {configEquipeSel !== 'TODAS' && (
+                      <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
+                        <label className="block text-[10px] font-black uppercase text-slate-400">Vendedores da Equipe ({(equipeVendedoresMap[configEquipeSel] || []).length})</label>
+                        <div className="flex gap-2">
+                          <input
+                            list="lista-vendedores-csv"
+                            value={novoVendedorNome}
+                            onChange={(e) => setNovoVendedorNome(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddVendedorEquipe(configEquipeSel, novoVendedorNome); } }}
+                            placeholder="Nome do vendedor"
+                            className="flex-1 bg-white border border-slate-200 px-4 py-2 rounded-xl text-xs font-bold text-slate-700 outline-none focus:border-emerald-500"
+                          />
+                          <datalist id="lista-vendedores-csv">
+                            {availableSellers.map(v => <option key={v} value={v} />)}
+                          </datalist>
+                          <button onClick={() => handleAddVendedorEquipe(configEquipeSel, novoVendedorNome)} className="bg-emerald-500 hover:bg-emerald-600 text-white font-black uppercase text-[10px] px-4 rounded-xl cursor-pointer">Adicionar</button>
+                        </div>
+                        {(equipeVendedoresMap[configEquipeSel] || []).length === 0 ? (
+                          <p className="text-[11px] text-slate-500">Nenhum vendedor cadastrado nesta equipe.</p>
+                        ) : (
+                          <div className="flex flex-wrap gap-2">
+                            {(equipeVendedoresMap[configEquipeSel] || []).map(v => (
+                              <span key={v} className="flex items-center gap-2 bg-white border border-slate-200 rounded-full pl-3 pr-1 py-1 text-[11px] font-bold text-slate-700">
+                                {v}
+                                <button onClick={() => handleRemoveVendedorEquipe(configEquipeSel, v)} title="Remover" className="w-5 h-5 rounded-full bg-rose-100 text-rose-600 font-black leading-none cursor-pointer hover:bg-rose-200">×</button>
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
