@@ -1649,15 +1649,17 @@
                             );
                          })}
                        </tbody>
-                       <tfoot className="bg-slate-50 border-t border-slate-200 text-xs font-black text-slate-800 uppercase">
-                         <tr>
-                           <td className="px-3 py-2">Total</td>
-                           <td className="px-3 py-2 text-center">{sumMeta}</td>
-                           <td className="px-3 py-2 text-center">{sumReal}</td>
-                           <td className="px-3 py-2 text-center"></td>
-                           <td className={`px-3 py-2 text-center ${sumGap < 0 ? 'text-rose-600' : 'text-emerald-600'}`}>{sumGap}</td>
-                         </tr>
-                       </tfoot>
+                        <tfoot className="bg-slate-50 border-t border-slate-200 text-xs font-black text-slate-800 uppercase">
+                          <tr>
+                            <td className="px-3 py-2">Total</td>
+                            <td className="px-3 py-2 text-center">{sumMeta}</td>
+                            <td className="px-3 py-2 text-center">{sumReal}</td>
+                            <td className="px-3 py-2 text-center font-bold text-blue-600">
+                              {weeksDays[w] > 0 ? (sumReal / weeksDays[w]).toFixed(2) : '0.00'}
+                            </td>
+                            <td className={`px-3 py-2 text-center ${sumGap < 0 ? 'text-rose-600' : 'text-emerald-600'}`}>{sumGap}</td>
+                          </tr>
+                        </tfoot>
                      </table>
                    </div>
                  );
