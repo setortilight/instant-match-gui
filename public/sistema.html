@@ -792,7 +792,7 @@
                 if (h.includes('status') || h.includes('situação') || idx === 38) if (idxStatus === -1 && !h.includes('agendamento')) idxStatus = idx;
                 if ((h.includes('data') && !h.includes('agendamento') && !h.includes('nasc')) || h.includes('venda inserida')) if (idxDataVenda === -1) idxDataVenda = idx;
                 if (h === 'cpf' || h.includes('documento')) if (idxCpf === -1) idxCpf = idx;
-                if (h.includes('cidade') || h.includes('endereço') || h.includes('endereco') || idx === 8) if (idxCidade === -1) idxCidade = idx;
+                if (h.includes('cidade') || h.includes('endereço') || h.includes('endereco') || idx === 6) if (idxCidade === -1) idxCidade = idx;
                 if (h === 'os' || h === 'ordem de serviço') if (idxOs === -1) idxOs = idx;
                 if (h.includes('turno')) if (idxTurno === -1) idxTurno = idx;
                 if (h.includes('telefone') || h === 'celular' || idx === 4) if (idxTelefone === -1) idxTelefone = idx;
@@ -900,7 +900,7 @@
                   id: i, cliente, vendedor, equipe, plano, status, statusAgendamento, valor,
                   dataVendaIso: dataIso, dataVendaFormatada,
                   cpf: idxCpf !== -1 ? String(cols[idxCpf]).trim() : '',
-                  cidade: idxCidade !== -1 ? String(cols[idxCidade]).trim() : '',
+                  cidade: cols[6] ? String(cols[6]).trim() : (idxCidade !== -1 ? String(cols[idxCidade]).trim() : ''),
                   os: idxOs !== -1 && cols[idxOs] ? String(cols[idxOs]).trim() : '',
                   turno: idxTurno !== -1 && cols[idxTurno] ? String(cols[idxTurno]).trim() : '',
                   telefone: idxTelefone !== -1 && cols[idxTelefone] ? String(cols[idxTelefone]).trim() : '',
@@ -2085,15 +2085,15 @@
                     <table className="w-full text-left border-collapse min-w-[1100px]">
                       <thead className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase">
                         <tr>
-                          <th className="px-4 py-3">Cliente</th>
-                          <th className="px-4 py-3">OS</th>
-                          <th className="px-4 py-3">CPF</th>
-                          <th className="px-4 py-3">Cidade</th>
-                          <th className="px-4 py-3">Dt Venda</th>
-                          <th className="px-4 py-3">Dt Agendamento</th>
-                          <th className="px-4 py-3">Vendedor</th>
-                          <th className="px-4 py-3">Equipe</th>
-                          <th className="px-4 py-3">Status</th>
+                          <th onClick={() => setProcessSortConfig(prev => ({ key: 'cliente', direction: prev.key === 'cliente' && prev.direction === 'asc' ? 'desc' : 'asc' }))} className="px-4 py-3 cursor-pointer hover:text-slate-700">Cliente</th>
+                          <th onClick={() => setProcessSortConfig(prev => ({ key: 'os', direction: prev.key === 'os' && prev.direction === 'asc' ? 'desc' : 'asc' }))} className="px-4 py-3 cursor-pointer hover:text-slate-700">OS</th>
+                          <th onClick={() => setProcessSortConfig(prev => ({ key: 'cpf', direction: prev.key === 'cpf' && prev.direction === 'asc' ? 'desc' : 'asc' }))} className="px-4 py-3 cursor-pointer hover:text-slate-700">CPF</th>
+                          <th onClick={() => setProcessSortConfig(prev => ({ key: 'cidade', direction: prev.key === 'cidade' && prev.direction === 'asc' ? 'desc' : 'asc' }))} className="px-4 py-3 cursor-pointer hover:text-slate-700">Cidade</th>
+                          <th onClick={() => setProcessSortConfig(prev => ({ key: 'dataVendaIso', direction: prev.key === 'dataVendaIso' && prev.direction === 'asc' ? 'desc' : 'asc' }))} className="px-4 py-3 cursor-pointer hover:text-slate-700">Dt Venda</th>
+                          <th onClick={() => setProcessSortConfig(prev => ({ key: 'dataAgendamento', direction: prev.key === 'dataAgendamento' && prev.direction === 'asc' ? 'desc' : 'asc' }))} className="px-4 py-3 cursor-pointer hover:text-slate-700">Dt Agendamento</th>
+                          <th onClick={() => setProcessSortConfig(prev => ({ key: 'vendedor', direction: prev.key === 'vendedor' && prev.direction === 'asc' ? 'desc' : 'asc' }))} className="px-4 py-3 cursor-pointer hover:text-slate-700">Vendedor</th>
+                          <th onClick={() => setProcessSortConfig(prev => ({ key: 'equipe', direction: prev.key === 'equipe' && prev.direction === 'asc' ? 'desc' : 'asc' }))} className="px-4 py-3 cursor-pointer hover:text-slate-700">Equipe</th>
+                          <th onClick={() => setProcessSortConfig(prev => ({ key: 'status', direction: prev.key === 'status' && prev.direction === 'asc' ? 'desc' : 'asc' }))} className="px-4 py-3 cursor-pointer hover:text-slate-700">Status</th>
                           <th className="px-4 py-3 text-center">Ações</th>
                         </tr>
                       </thead>
