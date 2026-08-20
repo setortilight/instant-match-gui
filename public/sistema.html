@@ -1144,14 +1144,18 @@
         if (tendenciaFilter === 'QUEDA') filtered = filtered.filter(s => s.diferencaAnterior < 0);
         else if (tendenciaFilter === 'ALTA') filtered = filtered.filter(s => s.diferencaAnterior >= 0);
         
-        if (rankingTopFilter === 'TOP3') filtered = filtered.slice(0, 3);
-        else if (rankingTopFilter === 'TOP5') filtered = filtered.slice(0, 5);
-        else if (rankingTopFilter === 'TOP10') filtered = filtered.slice(0, 10);
-        
+        // A Classificação Geral (tabela) NÃO é mais afetada pelo rankingTopFilter
         return filtered;
-      }, [rankingVendedores, quartilFilter, tendenciaFilter, rankingTopFilter]);
+      }, [rankingVendedores, quartilFilter, tendenciaFilter]);
 
-      const top3Vendedores = rankingVendedores.slice(0, 3);
+      const highlightedSellers = useMemo(() => {
+        let limit = 3;
+        if (rankingTopFilter === 'TOP5') limit = 5;
+        else if (rankingTopFilter === 'TOP10') limit = 10;
+        else if (rankingTopFilter === 'TODOS') limit = 3; // Padrão
+        
+        return rankingVendedores.slice(0, limit);
+      }, [rankingVendedores, rankingTopFilter]);
 
       const metrics = useMemo(() => {
         const totalVendasCount = dashboardFilteredSales.length;
@@ -1740,41 +1744,68 @@
             </div>
           </div>
 
-          {top3Vendedores.length > 0 && (
-            <div className="flex flex-col sm:flex-row items-end justify-center gap-6 md:gap-8 my-8 pt-8">
-              {top3Vendedores[1] && (
-                <div className="flex flex-col items-center order-2 sm:order-1">
-                  <div className="flex items-center gap-1 bg-slate-200 text-slate-700 px-3 py-1 rounded-full text-[9px] font-black mb-2"><Icon name="medal" className="w-3.5 h-3.5" /> 2º LUGAR</div>
-                  <span className="text-[11px] md:text-[13px] font-black text-slate-700 mb-1 uppercase text-center max-w-[120px] truncate">{top3Vendedores[1].vendedor}</span>
-                  <div className="w-28 md:w-48 h-36 md:h-48 bg-slate-200 rounded-t-[3.5rem] flex flex-col items-center justify-center relative shadow-md border-t-4 border-slate-400">
-                    <span className="text-4xl md:text-6xl font-black text-slate-700 italic leading-none">{top3Vendedores[1].total}</span>
-                    <span className="text-[10px] font-black text-slate-500 uppercase mt-2">Vendas</span>
-                  </div>
-                </div>
-              )}
+          {highlightedSellers.length > 0 && (
+            <div className="flex flex-wrap items-end justify-center gap-6 md:gap-8 my-8 pt-8">
+              {highlightedSellers.map((seller, index) => {
+                const rank = index + 1;
+                
+                // Configuração visual baseada na posição
+                let rankLabel = `${rank}º LUGAR`;
+                let iconName = "medal";
+                let bgColor = "bg-slate-200";
+                let textColor = "text-slate-700";
+                let borderColor = "border-slate-400";
+                let cardSize = "w-28 md:w-44 h-36 md:h-44";
+                let fontSize = "text-3xl md:text-5xl";
+                let orderClass = "order-" + (rank === 1 ? "1 sm:order-2" : rank === 2 ? "2 sm:order-1" : "3");
+                let extraClasses = "";
+                let crown = null;
 
-              {top3Vendedores[0] && (
-                <div className="flex flex-col items-center order-1 sm:order-2 z-10 sm:-mb-6">
-                  <Icon name="crown" className="w-10 h-10 md:w-12 md:h-12 text-amber-400 mb-2 drop-shadow-lg animate-bounce" />
-                  <div className="flex items-center gap-1 bg-amber-400 text-slate-950 px-4 py-1 rounded-full text-[10px] font-black mb-2 shadow"><Icon name="trophy" className="w-3.5 h-3.5" /> 1º LUGAR</div>
-                  <span className="text-[13px] md:text-[15px] font-black text-slate-900 mb-1 uppercase text-center max-w-[150px] truncate">{top3Vendedores[0].vendedor}</span>
-                  <div className="w-36 md:w-60 h-48 md:h-64 bg-gradient-to-b from-amber-400 to-amber-500 rounded-t-[4rem] flex flex-col items-center justify-center relative shadow-2xl border-t-4 border-amber-300">
-                    <span className="text-6xl md:text-8xl font-black text-white italic leading-none drop-shadow-md">{top3Vendedores[0].total}</span>
-                    <span className="text-[11px] font-black text-amber-950 uppercase mt-2">Vendas</span>
-                  </div>
-                </div>
-              )}
+                if (rank === 1) {
+                  rankLabel = "1º LUGAR";
+                  iconName = "trophy";
+                  bgColor = "bg-gradient-to-b from-amber-400 to-amber-500";
+                  textColor = "text-white";
+                  borderColor = "border-amber-300";
+                  cardSize = "w-36 md:w-60 h-48 md:h-64";
+                  fontSize = "text-6xl md:text-8xl";
+                  extraClasses = "z-10 sm:-mb-6 scale-110 md:scale-100";
+                  crown = <Icon name="crown" className="w-10 h-10 md:w-12 md:h-12 text-amber-400 mb-2 drop-shadow-lg animate-bounce" />;
+                } else if (rank === 2) {
+                  bgColor = "bg-slate-200";
+                  textColor = "text-slate-700";
+                  borderColor = "border-slate-400";
+                } else if (rank === 3) {
+                  rankLabel = "3º LUGAR";
+                  iconName = "award";
+                  bgColor = "bg-amber-800/10";
+                  textColor = "text-amber-900";
+                  borderColor = "border-amber-700";
+                  cardSize = "w-24 md:w-44 h-32 md:h-40";
+                } else {
+                  // TOP 4 ao 10: Tons de cinza
+                  bgColor = "bg-slate-100";
+                  textColor = "text-slate-500";
+                  borderColor = "border-slate-300";
+                  cardSize = "w-24 md:w-36 h-28 md:h-36";
+                  fontSize = "text-2xl md:text-4xl";
+                  orderClass = "order-4";
+                }
 
-              {top3Vendedores[2] && (
-                <div className="flex flex-col items-center order-3 sm:order-3">
-                  <div className="flex items-center gap-1 bg-amber-800/20 text-amber-900 px-3 py-1 rounded-full text-[9px] font-black mb-2"><Icon name="award" className="w-3.5 h-3.5" /> 3º LUGAR</div>
-                  <span className="text-[11px] md:text-[13px] font-black text-slate-700 mb-1 uppercase text-center max-w-[120px] truncate">{top3Vendedores[2].vendedor}</span>
-                  <div className="w-24 md:w-48 h-32 md:h-40 bg-amber-800/10 rounded-t-[3.5rem] flex flex-col items-center justify-center relative shadow-sm border-t-4 border-amber-700">
-                    <span className="text-3xl md:text-5xl font-black text-amber-900 italic leading-none">{top3Vendedores[2].total}</span>
-                    <span className="text-[10px] font-black text-amber-800/70 uppercase mt-2">Vendas</span>
+                return (
+                  <div key={seller.vendedor} className={`flex flex-col items-center transition-all duration-500 animate-in fade-in slide-in-from-bottom-4 ${orderClass} ${extraClasses}`}>
+                    {crown}
+                    <div className={`flex items-center gap-1 ${rank === 1 ? 'bg-amber-400 text-slate-950 shadow' : rank === 3 ? 'bg-amber-800/20 text-amber-900' : 'bg-slate-200 text-slate-700'} px-3 py-1 rounded-full text-[9px] font-black mb-2`}>
+                      <Icon name={iconName} className="w-3.5 h-3.5" /> {rankLabel}
+                    </div>
+                    <span className={`text-[11px] md:text-[13px] font-black ${rank === 1 ? 'text-slate-900' : 'text-slate-700'} mb-1 uppercase text-center max-w-[120px] truncate`}>{seller.vendedor}</span>
+                    <div className={`${cardSize} ${bgColor} rounded-t-[3.5rem] flex flex-col items-center justify-center relative shadow-md border-t-4 ${borderColor}`}>
+                      <span className={`${fontSize} font-black ${textColor} italic leading-none ${rank === 1 ? 'drop-shadow-md' : ''}`}>{seller.total}</span>
+                      <span className={`text-[10px] font-black ${rank === 1 ? 'text-amber-950' : rank === 3 ? 'text-amber-800/70' : 'text-slate-500'} uppercase mt-2`}>Vendas</span>
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })}
             </div>
           )}
 
