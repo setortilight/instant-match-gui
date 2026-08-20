@@ -1870,12 +1870,12 @@
                     return (
                       <tr key={v.vendedor} className="hover:bg-slate-50/80 transition-all">
                         <td className="px-6 py-4 font-black text-slate-800 uppercase text-xs">{v.vendedor}</td>
-                        <td className="px-6 py-4 font-bold text-slate-500 text-[10px] uppercase">{v.equipe}</td>
-                        <td className="px-6 py-4 text-center font-black text-slate-900 text-2xl italic">{v.total}</td>
-                        <td className="px-6 py-4 text-center font-bold text-slate-700 text-xs">{v.instaladas}</td>
-                        <td className="px-6 py-4 text-center font-black text-blue-600 text-sm">{v.du}</td>
-                        <td className="px-6 py-4 text-center"><span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-teal-50 text-teal-700 border border-teal-100">{v.percMixHigh}%</span></td>
-                        <td className="px-6 py-4 text-center">
+                        <td className={`px-6 py-4 font-bold text-slate-500 text-[10px] uppercase transition-all ${hiddenColumns.equipe ? 'blur-sm opacity-20' : ''}`}>{v.equipe}</td>
+                        <td className={`px-6 py-4 text-center font-black text-slate-900 text-2xl italic transition-all ${hiddenColumns.totalVendas ? 'blur-sm opacity-20' : ''}`}>{v.total}</td>
+                        <td className={`px-6 py-4 text-center font-bold text-slate-700 text-xs transition-all ${hiddenColumns.instaladas ? 'blur-sm opacity-20' : ''}`}>{v.instaladas}</td>
+                        <td className={`px-6 py-4 text-center font-black text-blue-600 text-sm transition-all ${hiddenColumns.du ? 'blur-sm opacity-20' : ''}`}>{v.du}</td>
+                        <td className={`px-6 py-4 text-center transition-all ${hiddenColumns.mix ? 'blur-sm opacity-20' : ''}`}><span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-teal-50 text-teal-700 border border-teal-100">{v.percMixHigh}%</span></td>
+                        <td className={`px-6 py-4 text-center transition-all ${hiddenColumns.quartil ? 'blur-sm opacity-20' : ''}`}>
                           <span className={`px-2.5 py-1 rounded-md text-[10px] font-black border uppercase 
                             ${v.quartil === 'Q1' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 
                               v.quartil === 'Q2' ? 'bg-blue-50 text-blue-600 border-blue-200' : 
@@ -1884,9 +1884,9 @@
                             {v.quartil}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-center font-black text-emerald-600 text-sm">{v.projecao}</td>
-                        <td className="px-6 py-4 text-center font-bold text-slate-500 text-sm">{v.qtdVendasAnterior}</td>
-                        <td className="px-6 py-4 text-center">
+                        <td className={`px-6 py-4 text-center font-black text-emerald-600 text-sm transition-all ${hiddenColumns.projecao ? 'blur-sm opacity-20' : ''}`}>{v.projecao}</td>
+                        <td className={`px-6 py-4 text-center font-bold text-slate-500 text-sm transition-all ${hiddenColumns.mesAnterior ? 'blur-sm opacity-20' : ''}`}>{v.qtdVendasAnterior}</td>
+                        <td className={`px-6 py-4 text-center transition-all ${hiddenColumns.comparativo ? 'blur-sm opacity-20' : ''}`}>
                           <div className={`flex flex-col items-center justify-center text-[10px] font-black px-2 py-1 rounded-md ${isPositiveProd ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
                             <span>{isPositiveProd ? '+' : ''}{v.diferencaAnterior} Vds</span>
                             <span className="opacity-75">{isPositiveProd ? '+' : ''}{v.produtividade}%</span>
