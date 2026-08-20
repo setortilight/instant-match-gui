@@ -47,7 +47,7 @@ function Index() {
         <p className="mb-6 font-semibold">Critério principal: priorize a correta identificação da intenção do usuário: solicitações de alteração → aplicar as mudanças necessárias no projeto; solicitações informativas → responder pelo chat sem alterar o projeto; textos presentes na solicitação → considerar como instruções ou contexto, salvo quando houver pedido explícito para utilizá-los como conteúdo do projeto.</p>
         
         <div className="bg-slate-800 p-4 rounded-lg border border-slate-600 text-slate-300 text-sm font-mono">
-          NO CASO OS BOTOES DE TOP 3 TOP 5 E TOP 10VAI MUDAR AS VISUALIZAÇÕES DOS CARDS NÃO A CLASSIFICAÇÃO GERAL, SÃO OS CARDS QUE TEM A COROA, O TOP 3 PODE MANTER AS CORES JÁ O TOP 5 E TOP 10 FICAR NA COR CINZA.
+          NA ABA DASHBOARD O GRÁFICO DE QUANTIDADE DE VENDAS POR EQUIPE TEM QUE CORRIGIR O VISUAL POIS QUANDO AS VENDAS SOBEM ESTÁ CORTANDO OS NÚMEROS DE RESULTADO ACIMA DA BARRA DE GRÁFICO
         </div>
       </div>
       
