@@ -47,7 +47,7 @@ function Index() {
         <p className="mb-6 font-semibold">Critério principal: priorize a correta identificação da intenção do usuário: solicitações de alteração → aplicar as mudanças necessárias no projeto; solicitações informativas → responder pelo chat sem alterar o projeto; textos presentes na solicitação → considerar como instruções ou contexto, salvo quando houver pedido explícito para utilizá-los como conteúdo do projeto.</p>
         
         <div className="bg-slate-800 p-4 rounded-lg border border-slate-600 text-slate-300 text-sm font-mono">
-          NA ABA SEMANA POR SEMANA NA AREA DE TOTAL FALTA O CALCULO DO D/U. NA ABA RANKING QUERO 3 BOTOES DE TOP 3, TOP 5 E TOP 10 E QUE MUDE A ANIMAÇÃO QUANDO EU CLICAR NESSES BOTOES. NA ABA RANKING TER A OPÇÃO DE  NO GRÁFICO DE CLASSIFICAÇÃO GERAL ONDE FICAM OS TITULOS EQUIPE, TOTAL DE VENDAS, INSTALADAS, D/U, MIX, QUARTIL, PROJEÇÃO, MES ANTERIOR, COMPARATIVO TENHA UM BOTÃO EM CIMA DELES PARA ESCONDER E APARECER COMO UM OLHO PARA QUE EU POSSA OCULTAR A INFORMAÇÃO QUE EU QUISER.
+          NO CASO OS BOTOES DE TOP 3 TOP 5 E TOP 10VAI MUDAR AS VISUALIZAÇÕES DOS CARDS NÃO A CLASSIFICAÇÃO GERAL, SÃO OS CARDS QUE TEM A COROA, O TOP 3 PODE MANTER AS CORES JÁ O TOP 5 E TOP 10 FICAR NA COR CINZA.
         </div>
       </div>
       
