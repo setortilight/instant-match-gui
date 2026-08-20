@@ -47,7 +47,7 @@ function Index() {
         <p className="mb-6 font-semibold">Critério principal: priorize a correta identificação da intenção do usuário: solicitações de alteração → aplicar as mudanças necessárias no projeto; solicitações informativas → responder pelo chat sem alterar o projeto; textos presentes na solicitação → considerar como instruções ou contexto, salvo quando houver pedido explícito para utilizá-los como conteúdo do projeto.</p>
         
         <div className="bg-slate-800 p-4 rounded-lg border border-slate-600 text-slate-300 text-sm font-mono">
-          NA ABA EFICACIA SETOR DE PROCESSO A COLUNA DE CIDADE ESTÁ PEGANDO A OBSERVAÇÃO DE RUA EU QUERO QUE MOSTRE O NOME DA CIDADE DA VENDA
+          NA ABA EFICACIA SETOR DE PROCESSOS TEM UM FILTRO DE PERIODO AO LADO DO BOTÃO DE MES ATUAL E MES ANTERIOR, ESSE FILTRO PODE SER RETIRADO POIS TEM O MESMO FILTRO ABAIXO NA DATA DA VENDA E DATA AGENDAMENTO QUE JÁ FAZ A FUNÇÃO DE VISULIZAÇÃO QUE EU PRECISO
         </div>
       </div>
       
