@@ -2085,15 +2085,15 @@
                     <table className="w-full text-left border-collapse min-w-[1100px]">
                       <thead className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase">
                         <tr>
-                          <th className="px-4 py-3">Cliente</th>
-                          <th className="px-4 py-3">OS</th>
-                          <th className="px-4 py-3">CPF</th>
-                          <th className="px-4 py-3">Cidade</th>
-                          <th className="px-4 py-3">Dt Venda</th>
-                          <th className="px-4 py-3">Dt Agendamento</th>
-                          <th className="px-4 py-3">Vendedor</th>
-                          <th className="px-4 py-3">Equipe</th>
-                          <th className="px-4 py-3">Status</th>
+                          <th onClick={() => setProcessSortConfig(prev => ({ key: 'cliente', direction: prev.key === 'cliente' && prev.direction === 'asc' ? 'desc' : 'asc' }))} className="px-4 py-3 cursor-pointer hover:text-slate-700">Cliente</th>
+                          <th onClick={() => setProcessSortConfig(prev => ({ key: 'os', direction: prev.key === 'os' && prev.direction === 'asc' ? 'desc' : 'asc' }))} className="px-4 py-3 cursor-pointer hover:text-slate-700">OS</th>
+                          <th onClick={() => setProcessSortConfig(prev => ({ key: 'cpf', direction: prev.key === 'cpf' && prev.direction === 'asc' ? 'desc' : 'asc' }))} className="px-4 py-3 cursor-pointer hover:text-slate-700">CPF</th>
+                          <th onClick={() => setProcessSortConfig(prev => ({ key: 'cidade', direction: prev.key === 'cidade' && prev.direction === 'asc' ? 'desc' : 'asc' }))} className="px-4 py-3 cursor-pointer hover:text-slate-700">Cidade</th>
+                          <th onClick={() => setProcessSortConfig(prev => ({ key: 'dataVendaIso', direction: prev.key === 'dataVendaIso' && prev.direction === 'asc' ? 'desc' : 'asc' }))} className="px-4 py-3 cursor-pointer hover:text-slate-700">Dt Venda</th>
+                          <th onClick={() => setProcessSortConfig(prev => ({ key: 'dataAgendamento', direction: prev.key === 'dataAgendamento' && prev.direction === 'asc' ? 'desc' : 'asc' }))} className="px-4 py-3 cursor-pointer hover:text-slate-700">Dt Agendamento</th>
+                          <th onClick={() => setProcessSortConfig(prev => ({ key: 'vendedor', direction: prev.key === 'vendedor' && prev.direction === 'asc' ? 'desc' : 'asc' }))} className="px-4 py-3 cursor-pointer hover:text-slate-700">Vendedor</th>
+                          <th onClick={() => setProcessSortConfig(prev => ({ key: 'equipe', direction: prev.key === 'equipe' && prev.direction === 'asc' ? 'desc' : 'asc' }))} className="px-4 py-3 cursor-pointer hover:text-slate-700">Equipe</th>
+                          <th onClick={() => setProcessSortConfig(prev => ({ key: 'status', direction: prev.key === 'status' && prev.direction === 'asc' ? 'desc' : 'asc' }))} className="px-4 py-3 cursor-pointer hover:text-slate-700">Status</th>
                           <th className="px-4 py-3 text-center">Ações</th>
                         </tr>
                       </thead>
