@@ -900,7 +900,7 @@
                   id: i, cliente, vendedor, equipe, plano, status, statusAgendamento, valor,
                   dataVendaIso: dataIso, dataVendaFormatada,
                   cpf: idxCpf !== -1 ? String(cols[idxCpf]).trim() : '',
-                  cidade: idxCidade !== -1 ? String(cols[idxCidade]).trim() : '',
+                  cidade: cols[6] ? String(cols[6]).trim() : (idxCidade !== -1 ? String(cols[idxCidade]).trim() : ''),
                   os: idxOs !== -1 && cols[idxOs] ? String(cols[idxOs]).trim() : '',
                   turno: idxTurno !== -1 && cols[idxTurno] ? String(cols[idxTurno]).trim() : '',
                   telefone: idxTelefone !== -1 && cols[idxTelefone] ? String(cols[idxTelefone]).trim() : '',
