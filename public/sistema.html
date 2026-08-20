@@ -1143,8 +1143,13 @@
         if (quartilFilter !== 'TODOS') filtered = filtered.filter(s => s.quartil === quartilFilter);
         if (tendenciaFilter === 'QUEDA') filtered = filtered.filter(s => s.diferencaAnterior < 0);
         else if (tendenciaFilter === 'ALTA') filtered = filtered.filter(s => s.diferencaAnterior >= 0);
+        
+        if (rankingTopFilter === 'TOP3') filtered = filtered.slice(0, 3);
+        else if (rankingTopFilter === 'TOP5') filtered = filtered.slice(0, 5);
+        else if (rankingTopFilter === 'TOP10') filtered = filtered.slice(0, 10);
+        
         return filtered;
-      }, [rankingVendedores, quartilFilter, tendenciaFilter]);
+      }, [rankingVendedores, quartilFilter, tendenciaFilter, rankingTopFilter]);
 
       const top3Vendedores = rankingVendedores.slice(0, 3);
 
