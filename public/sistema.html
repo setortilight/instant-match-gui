@@ -459,6 +459,12 @@
       
       const [quartilFilter, setQuartilFilter] = useState('TODOS');
       const [tendenciaFilter, setTendenciaFilter] = useState('TODAS');
+      const [rankingTopFilter, setRankingTopFilter] = useState('TODOS');
+      const [hiddenColumns, setHiddenColumns] = useState({});
+
+      const toggleColumn = (col) => {
+        setHiddenColumns(prev => ({ ...prev, [col]: !prev[col] }));
+      };
 
       // ESTADOS DE PROCESSOS (Eficácia)
       const [showFilters, setShowFilters] = useState(true);
