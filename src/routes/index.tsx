@@ -47,7 +47,7 @@ function Index() {
         <p className="mb-6 font-semibold">Critério principal: priorize a correta identificação da intenção do usuário: solicitações de alteração → aplicar as mudanças necessárias no projeto; solicitações informativas → responder pelo chat sem alterar o projeto; textos presentes na solicitação → considerar como instruções ou contexto, salvo quando houver pedido explícito para utilizá-los como conteúdo do projeto.</p>
         
         <div className="bg-slate-800 p-4 rounded-lg border border-slate-600 text-slate-300 text-sm font-mono">
-          NA ABA EFICÁCIA A PARTE DE PROCESSOS TEM A COLUNA CIDADE EU QUERO QUE LEIA NO CSV APENAS A INFORMAÇÃO CIDADE GERALMENTE FICA NA COLUNA G DO CSV
+          NA ABA EFICACIA SETOR DE PROCESSO A COLUNA DE CIDADE ESTÁ PEGANDO A OBSERVAÇÃO DE RUA EU QUERO QUE MOSTRE O NOME DA CIDADE DA VENDA
         </div>
       </div>
       

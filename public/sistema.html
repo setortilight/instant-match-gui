@@ -792,7 +792,8 @@
                 if (h.includes('status') || h.includes('situação') || idx === 38) if (idxStatus === -1 && !h.includes('agendamento')) idxStatus = idx;
                 if ((h.includes('data') && !h.includes('agendamento') && !h.includes('nasc')) || h.includes('venda inserida')) if (idxDataVenda === -1) idxDataVenda = idx;
                 if (h === 'cpf' || h.includes('documento')) if (idxCpf === -1) idxCpf = idx;
-                if (h.includes('cidade') || h.includes('endereço') || h.includes('endereco') || idx === 6) if (idxCidade === -1) idxCidade = idx;
+                if (h === 'cidade' || (h.includes('cidade') && !h.includes('endereço') && !h.includes('endereco'))) if (idxCidade === -1) idxCidade = idx;
+                if (idxCidade === -1 && idx === 6) idxCidade = idx;
                 if (h === 'os' || h === 'ordem de serviço') if (idxOs === -1) idxOs = idx;
                 if (h.includes('turno')) if (idxTurno === -1) idxTurno = idx;
                 if (h.includes('telefone') || h === 'celular' || idx === 4) if (idxTelefone === -1) idxTelefone = idx;
@@ -900,7 +901,7 @@
                   id: i, cliente, vendedor, equipe, plano, status, statusAgendamento, valor,
                   dataVendaIso: dataIso, dataVendaFormatada,
                   cpf: idxCpf !== -1 ? String(cols[idxCpf]).trim() : '',
-                  cidade: cols[6] ? String(cols[6]).trim() : (idxCidade !== -1 ? String(cols[idxCidade]).trim() : ''),
+                  cidade: idxCidade !== -1 ? String(cols[idxCidade]).trim() : '',
                   os: idxOs !== -1 && cols[idxOs] ? String(cols[idxOs]).trim() : '',
                   turno: idxTurno !== -1 && cols[idxTurno] ? String(cols[idxTurno]).trim() : '',
                   telefone: idxTelefone !== -1 && cols[idxTelefone] ? String(cols[idxTelefone]).trim() : '',
