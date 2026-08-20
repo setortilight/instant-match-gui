@@ -1790,15 +1790,78 @@
                 <thead className="bg-white text-[9px] font-black text-slate-300 uppercase tracking-widest border-b border-slate-100">
                   <tr>
                     <th className="px-6 py-4">Consultor / Vendedor</th>
-                    <th className="px-6 py-4">Equipe</th>
-                    <th className="px-6 py-4 text-center text-emerald-600">Total Vendas</th>
-                    <th className="px-6 py-4 text-center">Instaladas</th>
-                    <th className="px-6 py-4 text-center">D/U Dia Útil</th>
-                    <th className="px-6 py-4 text-center">Mix High</th>
-                    <th className="px-6 py-4 text-center">Quartil</th>
-                    <th className="px-6 py-4 text-center">Projeção</th>
-                    <th className="px-6 py-4 text-center">Mês Anterior</th>
-                    <th className="px-6 py-4 text-center">Comparativo</th>
+                    <th className={`px-6 py-4 ${hiddenColumns.equipe ? 'opacity-20' : ''}`}>
+                      <div className="flex flex-col items-center gap-1">
+                        <button onClick={() => toggleColumn('equipe')} className="text-slate-400 hover:text-emerald-500 transition-colors">
+                          <Icon name={hiddenColumns.equipe ? "eye-off" : "eye"} className="w-3.5 h-3.5" />
+                        </button>
+                        <span>Equipe</span>
+                      </div>
+                    </th>
+                    <th className={`px-6 py-4 text-center text-emerald-600 ${hiddenColumns.totalVendas ? 'opacity-20' : ''}`}>
+                      <div className="flex flex-col items-center gap-1">
+                        <button onClick={() => toggleColumn('totalVendas')} className="text-slate-400 hover:text-emerald-500 transition-colors">
+                          <Icon name={hiddenColumns.totalVendas ? "eye-off" : "eye"} className="w-3.5 h-3.5" />
+                        </button>
+                        <span>Total Vendas</span>
+                      </div>
+                    </th>
+                    <th className={`px-6 py-4 text-center ${hiddenColumns.instaladas ? 'opacity-20' : ''}`}>
+                      <div className="flex flex-col items-center gap-1">
+                        <button onClick={() => toggleColumn('instaladas')} className="text-slate-400 hover:text-emerald-500 transition-colors">
+                          <Icon name={hiddenColumns.instaladas ? "eye-off" : "eye"} className="w-3.5 h-3.5" />
+                        </button>
+                        <span>Instaladas</span>
+                      </div>
+                    </th>
+                    <th className={`px-6 py-4 text-center ${hiddenColumns.du ? 'opacity-20' : ''}`}>
+                      <div className="flex flex-col items-center gap-1">
+                        <button onClick={() => toggleColumn('du')} className="text-slate-400 hover:text-emerald-500 transition-colors">
+                          <Icon name={hiddenColumns.du ? "eye-off" : "eye"} className="w-3.5 h-3.5" />
+                        </button>
+                        <span>D/U Dia Útil</span>
+                      </div>
+                    </th>
+                    <th className={`px-6 py-4 text-center ${hiddenColumns.mix ? 'opacity-20' : ''}`}>
+                      <div className="flex flex-col items-center gap-1">
+                        <button onClick={() => toggleColumn('mix')} className="text-slate-400 hover:text-emerald-500 transition-colors">
+                          <Icon name={hiddenColumns.mix ? "eye-off" : "eye"} className="w-3.5 h-3.5" />
+                        </button>
+                        <span>Mix High</span>
+                      </div>
+                    </th>
+                    <th className={`px-6 py-4 text-center ${hiddenColumns.quartil ? 'opacity-20' : ''}`}>
+                      <div className="flex flex-col items-center gap-1">
+                        <button onClick={() => toggleColumn('quartil')} className="text-slate-400 hover:text-emerald-500 transition-colors">
+                          <Icon name={hiddenColumns.quartil ? "eye-off" : "eye"} className="w-3.5 h-3.5" />
+                        </button>
+                        <span>Quartil</span>
+                      </div>
+                    </th>
+                    <th className={`px-6 py-4 text-center ${hiddenColumns.projecao ? 'opacity-20' : ''}`}>
+                      <div className="flex flex-col items-center gap-1">
+                        <button onClick={() => toggleColumn('projecao')} className="text-slate-400 hover:text-emerald-500 transition-colors">
+                          <Icon name={hiddenColumns.projecao ? "eye-off" : "eye"} className="w-3.5 h-3.5" />
+                        </button>
+                        <span>Projeção</span>
+                      </div>
+                    </th>
+                    <th className={`px-6 py-4 text-center ${hiddenColumns.mesAnterior ? 'opacity-20' : ''}`}>
+                      <div className="flex flex-col items-center gap-1">
+                        <button onClick={() => toggleColumn('mesAnterior')} className="text-slate-400 hover:text-emerald-500 transition-colors">
+                          <Icon name={hiddenColumns.mesAnterior ? "eye-off" : "eye"} className="w-3.5 h-3.5" />
+                        </button>
+                        <span>Mês Anterior</span>
+                      </div>
+                    </th>
+                    <th className={`px-6 py-4 text-center ${hiddenColumns.comparativo ? 'opacity-20' : ''}`}>
+                      <div className="flex flex-col items-center gap-1">
+                        <button onClick={() => toggleColumn('comparativo')} className="text-slate-400 hover:text-emerald-500 transition-colors">
+                          <Icon name={hiddenColumns.comparativo ? "eye-off" : "eye"} className="w-3.5 h-3.5" />
+                        </button>
+                        <span>Comparativo</span>
+                      </div>
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50 text-xs">
