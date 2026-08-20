@@ -459,6 +459,12 @@
       
       const [quartilFilter, setQuartilFilter] = useState('TODOS');
       const [tendenciaFilter, setTendenciaFilter] = useState('TODAS');
+      const [rankingTopFilter, setRankingTopFilter] = useState('TODOS');
+      const [hiddenColumns, setHiddenColumns] = useState({});
+
+      const toggleColumn = (col) => {
+        setHiddenColumns(prev => ({ ...prev, [col]: !prev[col] }));
+      };
 
       // ESTADOS DE PROCESSOS (Eficácia)
       const [showFilters, setShowFilters] = useState(true);
@@ -1137,8 +1143,13 @@
         if (quartilFilter !== 'TODOS') filtered = filtered.filter(s => s.quartil === quartilFilter);
         if (tendenciaFilter === 'QUEDA') filtered = filtered.filter(s => s.diferencaAnterior < 0);
         else if (tendenciaFilter === 'ALTA') filtered = filtered.filter(s => s.diferencaAnterior >= 0);
+        
+        if (rankingTopFilter === 'TOP3') filtered = filtered.slice(0, 3);
+        else if (rankingTopFilter === 'TOP5') filtered = filtered.slice(0, 5);
+        else if (rankingTopFilter === 'TOP10') filtered = filtered.slice(0, 10);
+        
         return filtered;
-      }, [rankingVendedores, quartilFilter, tendenciaFilter]);
+      }, [rankingVendedores, quartilFilter, tendenciaFilter, rankingTopFilter]);
 
       const top3Vendedores = rankingVendedores.slice(0, 3);
 
@@ -1582,15 +1593,17 @@
                             );
                          })}
                        </tbody>
-                       <tfoot className="bg-slate-50 border-t border-slate-200 text-xs font-black text-slate-800 uppercase">
-                         <tr>
-                           <td className="px-3 py-2">Total</td>
-                           <td className="px-3 py-2 text-center">{sumMeta}</td>
-                           <td className="px-3 py-2 text-center">{sumReal}</td>
-                           <td className="px-3 py-2 text-center"></td>
-                           <td className={`px-3 py-2 text-center ${sumGap < 0 ? 'text-rose-600' : 'text-emerald-600'}`}>{sumGap}</td>
-                         </tr>
-                       </tfoot>
+                        <tfoot className="bg-slate-50 border-t border-slate-200 text-xs font-black text-slate-800 uppercase">
+                          <tr>
+                            <td className="px-3 py-2">Total</td>
+                            <td className="px-3 py-2 text-center">{sumMeta}</td>
+                            <td className="px-3 py-2 text-center">{sumReal}</td>
+                            <td className="px-3 py-2 text-center font-bold text-blue-600">
+                              {weeksDays[w] > 0 ? (sumReal / weeksDays[w]).toFixed(1) : '0.0'}
+                            </td>
+                            <td className={`px-3 py-2 text-center ${sumGap < 0 ? 'text-rose-600' : 'text-emerald-600'}`}>{sumGap}</td>
+                          </tr>
+                        </tfoot>
                      </table>
                    </div>
                  );
@@ -1636,15 +1649,17 @@
                             );
                          })}
                        </tbody>
-                       <tfoot className="bg-slate-50 border-t border-slate-200 text-xs font-black text-slate-800 uppercase">
-                         <tr>
-                           <td className="px-3 py-2">Total</td>
-                           <td className="px-3 py-2 text-center">{sumMeta}</td>
-                           <td className="px-3 py-2 text-center">{sumReal}</td>
-                           <td className="px-3 py-2 text-center"></td>
-                           <td className={`px-3 py-2 text-center ${sumGap < 0 ? 'text-rose-600' : 'text-emerald-600'}`}>{sumGap}</td>
-                         </tr>
-                       </tfoot>
+                        <tfoot className="bg-slate-50 border-t border-slate-200 text-xs font-black text-slate-800 uppercase">
+                          <tr>
+                            <td className="px-3 py-2">Total</td>
+                            <td className="px-3 py-2 text-center">{sumMeta}</td>
+                            <td className="px-3 py-2 text-center">{sumReal}</td>
+                            <td className="px-3 py-2 text-center font-bold text-blue-600">
+                              {weeksDays[w] > 0 ? (sumReal / weeksDays[w]).toFixed(2) : '0.00'}
+                            </td>
+                            <td className={`px-3 py-2 text-center ${sumGap < 0 ? 'text-rose-600' : 'text-emerald-600'}`}>{sumGap}</td>
+                          </tr>
+                        </tfoot>
                      </table>
                    </div>
                  );
@@ -1705,9 +1720,16 @@
               ))}
             </div>
 
-            <div className="flex justify-center mt-6">
+            <div className="flex flex-col items-center gap-4 mt-6">
               <div className="inline-flex bg-white p-1.5 rounded-full border border-slate-100 shadow-sm gap-1 overflow-x-auto max-w-full">
-                 <button onClick={() => setTendenciaFilter('TODAS')} className={`px-5 py-2.5 rounded-full text-[10px] font-black uppercase transition-all whitespace-nowrap ${tendenciaFilter === 'TODAS' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'}`}>TODOS</button>
+                 <button onClick={() => setRankingTopFilter('TODOS')} className={`px-5 py-2.5 rounded-full text-[10px] font-black uppercase transition-all whitespace-nowrap ${rankingTopFilter === 'TODOS' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'}`}>TODOS</button>
+                 <button onClick={() => setRankingTopFilter('TOP3')} className={`px-5 py-2.5 rounded-full text-[10px] font-black uppercase transition-all whitespace-nowrap ${rankingTopFilter === 'TOP3' ? 'bg-amber-400 text-slate-950 shadow-md' : 'text-slate-500 hover:bg-slate-50'}`}>TOP 3</button>
+                 <button onClick={() => setRankingTopFilter('TOP5')} className={`px-5 py-2.5 rounded-full text-[10px] font-black uppercase transition-all whitespace-nowrap ${rankingTopFilter === 'TOP5' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'}`}>TOP 5</button>
+                 <button onClick={() => setRankingTopFilter('TOP10')} className={`px-5 py-2.5 rounded-full text-[10px] font-black uppercase transition-all whitespace-nowrap ${rankingTopFilter === 'TOP10' ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-50'}`}>TOP 10</button>
+              </div>
+
+              <div className="inline-flex bg-white p-1.5 rounded-full border border-slate-100 shadow-sm gap-1 overflow-x-auto max-w-full">
+                 <button onClick={() => setTendenciaFilter('TODAS')} className={`px-5 py-2.5 rounded-full text-[10px] font-black uppercase transition-all whitespace-nowrap ${tendenciaFilter === 'TODAS' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-600 hover:bg-slate-50'}`}>TODAS TENDÊNCIAS</button>
                  <button onClick={() => setTendenciaFilter('ALTA')} className={`px-5 py-2.5 rounded-full text-[10px] font-black uppercase transition-all flex items-center gap-2 whitespace-nowrap ${tendenciaFilter === 'ALTA' ? 'bg-emerald-50 text-emerald-600 shadow-sm' : 'text-slate-500 hover:bg-slate-50'}`}>
                     <Icon name="trending-up" className="w-3.5 h-3.5" /> EM ALTA ({tendenciaStats.emAlta})
                  </button>
@@ -1768,15 +1790,78 @@
                 <thead className="bg-white text-[9px] font-black text-slate-300 uppercase tracking-widest border-b border-slate-100">
                   <tr>
                     <th className="px-6 py-4">Consultor / Vendedor</th>
-                    <th className="px-6 py-4">Equipe</th>
-                    <th className="px-6 py-4 text-center text-emerald-600">Total Vendas</th>
-                    <th className="px-6 py-4 text-center">Instaladas</th>
-                    <th className="px-6 py-4 text-center">D/U Dia Útil</th>
-                    <th className="px-6 py-4 text-center">Mix High</th>
-                    <th className="px-6 py-4 text-center">Quartil</th>
-                    <th className="px-6 py-4 text-center">Projeção</th>
-                    <th className="px-6 py-4 text-center">Mês Anterior</th>
-                    <th className="px-6 py-4 text-center">Comparativo</th>
+                    <th className={`px-6 py-4 ${hiddenColumns.equipe ? 'opacity-20' : ''}`}>
+                      <div className="flex flex-col items-center gap-1">
+                        <button onClick={() => toggleColumn('equipe')} className="text-slate-400 hover:text-emerald-500 transition-colors">
+                          <Icon name={hiddenColumns.equipe ? "eye-off" : "eye"} className="w-3.5 h-3.5" />
+                        </button>
+                        <span>Equipe</span>
+                      </div>
+                    </th>
+                    <th className={`px-6 py-4 text-center text-emerald-600 ${hiddenColumns.totalVendas ? 'opacity-20' : ''}`}>
+                      <div className="flex flex-col items-center gap-1">
+                        <button onClick={() => toggleColumn('totalVendas')} className="text-slate-400 hover:text-emerald-500 transition-colors">
+                          <Icon name={hiddenColumns.totalVendas ? "eye-off" : "eye"} className="w-3.5 h-3.5" />
+                        </button>
+                        <span>Total Vendas</span>
+                      </div>
+                    </th>
+                    <th className={`px-6 py-4 text-center ${hiddenColumns.instaladas ? 'opacity-20' : ''}`}>
+                      <div className="flex flex-col items-center gap-1">
+                        <button onClick={() => toggleColumn('instaladas')} className="text-slate-400 hover:text-emerald-500 transition-colors">
+                          <Icon name={hiddenColumns.instaladas ? "eye-off" : "eye"} className="w-3.5 h-3.5" />
+                        </button>
+                        <span>Instaladas</span>
+                      </div>
+                    </th>
+                    <th className={`px-6 py-4 text-center ${hiddenColumns.du ? 'opacity-20' : ''}`}>
+                      <div className="flex flex-col items-center gap-1">
+                        <button onClick={() => toggleColumn('du')} className="text-slate-400 hover:text-emerald-500 transition-colors">
+                          <Icon name={hiddenColumns.du ? "eye-off" : "eye"} className="w-3.5 h-3.5" />
+                        </button>
+                        <span>D/U Dia Útil</span>
+                      </div>
+                    </th>
+                    <th className={`px-6 py-4 text-center ${hiddenColumns.mix ? 'opacity-20' : ''}`}>
+                      <div className="flex flex-col items-center gap-1">
+                        <button onClick={() => toggleColumn('mix')} className="text-slate-400 hover:text-emerald-500 transition-colors">
+                          <Icon name={hiddenColumns.mix ? "eye-off" : "eye"} className="w-3.5 h-3.5" />
+                        </button>
+                        <span>Mix High</span>
+                      </div>
+                    </th>
+                    <th className={`px-6 py-4 text-center ${hiddenColumns.quartil ? 'opacity-20' : ''}`}>
+                      <div className="flex flex-col items-center gap-1">
+                        <button onClick={() => toggleColumn('quartil')} className="text-slate-400 hover:text-emerald-500 transition-colors">
+                          <Icon name={hiddenColumns.quartil ? "eye-off" : "eye"} className="w-3.5 h-3.5" />
+                        </button>
+                        <span>Quartil</span>
+                      </div>
+                    </th>
+                    <th className={`px-6 py-4 text-center ${hiddenColumns.projecao ? 'opacity-20' : ''}`}>
+                      <div className="flex flex-col items-center gap-1">
+                        <button onClick={() => toggleColumn('projecao')} className="text-slate-400 hover:text-emerald-500 transition-colors">
+                          <Icon name={hiddenColumns.projecao ? "eye-off" : "eye"} className="w-3.5 h-3.5" />
+                        </button>
+                        <span>Projeção</span>
+                      </div>
+                    </th>
+                    <th className={`px-6 py-4 text-center ${hiddenColumns.mesAnterior ? 'opacity-20' : ''}`}>
+                      <div className="flex flex-col items-center gap-1">
+                        <button onClick={() => toggleColumn('mesAnterior')} className="text-slate-400 hover:text-emerald-500 transition-colors">
+                          <Icon name={hiddenColumns.mesAnterior ? "eye-off" : "eye"} className="w-3.5 h-3.5" />
+                        </button>
+                        <span>Mês Anterior</span>
+                      </div>
+                    </th>
+                    <th className={`px-6 py-4 text-center ${hiddenColumns.comparativo ? 'opacity-20' : ''}`}>
+                      <div className="flex flex-col items-center gap-1">
+                        <button onClick={() => toggleColumn('comparativo')} className="text-slate-400 hover:text-emerald-500 transition-colors">
+                          <Icon name={hiddenColumns.comparativo ? "eye-off" : "eye"} className="w-3.5 h-3.5" />
+                        </button>
+                        <span>Comparativo</span>
+                      </div>
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50 text-xs">
@@ -1785,12 +1870,12 @@
                     return (
                       <tr key={v.vendedor} className="hover:bg-slate-50/80 transition-all">
                         <td className="px-6 py-4 font-black text-slate-800 uppercase text-xs">{v.vendedor}</td>
-                        <td className="px-6 py-4 font-bold text-slate-500 text-[10px] uppercase">{v.equipe}</td>
-                        <td className="px-6 py-4 text-center font-black text-slate-900 text-2xl italic">{v.total}</td>
-                        <td className="px-6 py-4 text-center font-bold text-slate-700 text-xs">{v.instaladas}</td>
-                        <td className="px-6 py-4 text-center font-black text-blue-600 text-sm">{v.du}</td>
-                        <td className="px-6 py-4 text-center"><span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-teal-50 text-teal-700 border border-teal-100">{v.percMixHigh}%</span></td>
-                        <td className="px-6 py-4 text-center">
+                        <td className={`px-6 py-4 font-bold text-slate-500 text-[10px] uppercase transition-all ${hiddenColumns.equipe ? 'blur-sm opacity-20' : ''}`}>{v.equipe}</td>
+                        <td className={`px-6 py-4 text-center font-black text-slate-900 text-2xl italic transition-all ${hiddenColumns.totalVendas ? 'blur-sm opacity-20' : ''}`}>{v.total}</td>
+                        <td className={`px-6 py-4 text-center font-bold text-slate-700 text-xs transition-all ${hiddenColumns.instaladas ? 'blur-sm opacity-20' : ''}`}>{v.instaladas}</td>
+                        <td className={`px-6 py-4 text-center font-black text-blue-600 text-sm transition-all ${hiddenColumns.du ? 'blur-sm opacity-20' : ''}`}>{v.du}</td>
+                        <td className={`px-6 py-4 text-center transition-all ${hiddenColumns.mix ? 'blur-sm opacity-20' : ''}`}><span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-teal-50 text-teal-700 border border-teal-100">{v.percMixHigh}%</span></td>
+                        <td className={`px-6 py-4 text-center transition-all ${hiddenColumns.quartil ? 'blur-sm opacity-20' : ''}`}>
                           <span className={`px-2.5 py-1 rounded-md text-[10px] font-black border uppercase 
                             ${v.quartil === 'Q1' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 
                               v.quartil === 'Q2' ? 'bg-blue-50 text-blue-600 border-blue-200' : 
@@ -1799,9 +1884,9 @@
                             {v.quartil}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-center font-black text-emerald-600 text-sm">{v.projecao}</td>
-                        <td className="px-6 py-4 text-center font-bold text-slate-500 text-sm">{v.qtdVendasAnterior}</td>
-                        <td className="px-6 py-4 text-center">
+                        <td className={`px-6 py-4 text-center font-black text-emerald-600 text-sm transition-all ${hiddenColumns.projecao ? 'blur-sm opacity-20' : ''}`}>{v.projecao}</td>
+                        <td className={`px-6 py-4 text-center font-bold text-slate-500 text-sm transition-all ${hiddenColumns.mesAnterior ? 'blur-sm opacity-20' : ''}`}>{v.qtdVendasAnterior}</td>
+                        <td className={`px-6 py-4 text-center transition-all ${hiddenColumns.comparativo ? 'blur-sm opacity-20' : ''}`}>
                           <div className={`flex flex-col items-center justify-center text-[10px] font-black px-2 py-1 rounded-md ${isPositiveProd ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
                             <span>{isPositiveProd ? '+' : ''}{v.diferencaAnterior} Vds</span>
                             <span className="opacity-75">{isPositiveProd ? '+' : ''}{v.produtividade}%</span>
