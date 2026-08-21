@@ -985,6 +985,12 @@
                   dataAgend = agendParsed ? agendParsed.fmt : formatToDDMMYYYY(cols[idxDataAgendamento]);
                 }
 
+                let dataVencIso = '', dataVencFormatada = '';
+                if (idxDataVencimento !== -1 && cols[idxDataVencimento]) {
+                  const vencParsed = extractDateInfo(cols[idxDataVencimento]);
+                  if (vencParsed) { dataVencIso = vencParsed.iso; dataVencFormatada = vencParsed.fmt; }
+                }
+
                 parsed.push({
                   id: i, cliente, vendedor, equipe, plano, status, statusAgendamento, valor,
                   dataVendaIso: dataIso, dataVendaFormatada,
@@ -996,7 +1002,11 @@
                   obsEndereco: idxObsEndereco !== -1 && cols[idxObsEndereco] ? String(cols[idxObsEndereco]).trim() : '',
                   obsVenda: idxObsVenda !== -1 && cols[idxObsVenda] ? String(cols[idxObsVenda]).trim() : '',
                   obsInstalacao: idxComplementoInstalacao !== -1 && cols[idxComplementoInstalacao] ? String(cols[idxComplementoInstalacao]).trim() : '',
-                  dataAgendamento: dataAgend
+                  dataAgendamento: dataAgend,
+                  dataVencimentoIso: dataVencIso,
+                  dataVencimentoFormatada: dataVencFormatada,
+                  statusPgto: idxStatusPgto !== -1 ? String(cols[idxStatusPgto]).toUpperCase().trim() : 'PENDENTE',
+                  obsPgto: idxObsPgto !== -1 ? String(cols[idxObsPgto]).trim() : ''
                 });
               }
 
