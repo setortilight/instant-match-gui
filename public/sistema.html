@@ -806,7 +806,9 @@
                 if (h.includes('obs da venda') || h.includes('observação') || idx === 37) if (idxObsVenda === -1) idxObsVenda = idx;
                 if (h.includes('agendamento') && (h.includes('data') || h.includes('dt'))) if (idxDataAgendamento === -1) idxDataAgendamento = idx;
                 if (h.includes('status') && h.includes('agendamento')) if (idxStatusAgendamento === -1) idxStatusAgendamento = idx;
-                if (h.includes('complemento agendamento instalação') || idx === 37) if (idxComplementoInstalacao === -1) idxComplementoInstalacao = idx;
+                if (h.includes('complemento agendamento instalação') || idx === 37) {
+                  if (idxComplementoInstalacao === -1) idxComplementoInstalacao = idx;
+                }
               });
 
               if (idxTelefone === -1) idxTelefone = 4;
