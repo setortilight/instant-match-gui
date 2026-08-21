@@ -1987,7 +1987,17 @@
                   <button onClick={() => setEficaciaDataSource('anterior')} className={`px-4 py-2.5 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-widest transition-all cursor-pointer flex items-center gap-2 ${eficaciaDataSource === 'anterior' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200'}`}><Icon name="history" className="w-3.5 h-3.5" /> Mês Anterior</button>
                 </div>
 
-
+                <div className="flex w-full sm:w-auto items-center gap-2">
+                  <input type="file" id="eficacia-upload-atual" className="hidden" accept=".csv, .xlsx, .xls" onChange={(e) => handleCsvUpload(e, 'eficacia_atual')} />
+                  <button onClick={() => document.getElementById('eficacia-upload-atual').click()} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer shadow-md flex items-center gap-2">
+                    <Icon name="upload" className="w-3.5 h-3.5" /> CSV Atual (Eficácia)
+                  </button>
+                  
+                  <input type="file" id="eficacia-upload-anterior" className="hidden" accept=".csv, .xlsx, .xls" onChange={(e) => handleCsvUpload(e, 'eficacia_anterior')} />
+                  <button onClick={() => document.getElementById('eficacia-upload-anterior').click()} className="bg-blue-700 hover:bg-blue-800 text-white px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer shadow-md flex items-center gap-2">
+                    <Icon name="upload" className="w-3.5 h-3.5" /> CSV Anterior (Eficácia)
+                  </button>
+                </div>
               </div>
 
               {eficaciaSubTab === 'dashboard' && (
