@@ -452,6 +452,16 @@
       const [eficaciaPreviousSalesData, setEficaciaPreviousSalesData] = useState([]);
       const [churnData, setChurnData] = useState([]);
       const [fpdData, setFpdData] = useState([]);
+      const [fpdSalesData, setFpdSalesData] = useState([]); // Dados consolidados FPD
+      const [fpdSubTab, setFpdSubTab] = useState('dashboard');
+      const [fpdSelectedMonth, setFpdSelectedMonth] = useState(new Date().getMonth() + 1); // 1-12
+      const [fpdFilterEquipe, setFpdFilterEquipe] = useState('TODAS');
+      const [fpdFilterStatusPgto, setFpdFilterStatusPgto] = useState('TODOS');
+      const [fpdFilterFaixa, setFpdFilterFaixa] = useState('TODOS');
+      const [fpdFilterVendedor, setFpdFilterVendedor] = useState('TODOS');
+      const [fpdSearchText, setFpdSearchText] = useState('');
+      const [fpdItemsPerPage, setFpdItemsPerPage] = useState(50);
+      const [fpdCurrentPage, setFpdCurrentPage] = useState(1);
       const [cancelamentoData, setCancelamentoData] = useState([]);
       const [qualidadeData, setQualidadeData] = useState([]);
 
