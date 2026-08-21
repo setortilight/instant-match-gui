@@ -868,7 +868,7 @@
               let idxCliente = -1, idxVendedor = -1, idxEquipe = -1, idxPlano = -1, idxValor = -1, idxStatus = -1, idxDataVenda = -1;
               let idxCpf = -1, idxCidade = -1, idxOs = -1, idxTurno = -1, idxTelefone = -1, idxObs = -1, idxDataAgendamento = -1, idxStatusAgendamento = -1;
               let idxObsEndereco = -1, idxObsVenda = -1, idxComplementoInstalacao = -1;
-              let idxPedido = -1; // Novo para OSAB
+              let idxPedido = -1, idxSituacao = -1, idxDataAgendamentoOsab = -1; // Novo para OSAB
 
               headers.forEach((h, idx) => {
                 if (h.includes('cliente') || h.includes('nome')) if (idxCliente === -1) idxCliente = idx;
@@ -912,10 +912,9 @@
                 
                 // Forçar índices específicos para FPD Novo se necessário
                 if (type === 'fpd_atual' || type === 'osab') {
-                  if (head === 'os' || head === 'pedido' || head === 'nº pedido') {
-                    idxOs = idx;
-                    if (head.includes('pedido')) idxPedido = idx;
-                  }
+                  if (head === 'os' || head === 'pedido' || head === 'nº pedido') { idxOs = idx; idxPedido = idx; }
+                  if (head.includes('situação') || head.includes('situacao') || head === 'status') idxSituacao = idx;
+                  if (head.includes('data') && head.includes('agendamento')) idxDataAgendamentoOsab = idx; // Data de agendamento do OSAB
                   if (head === 'cliente' || head === 'nome do cliente') idxCliente = idx;
                   if (head === 'cpf' || head === 'cpf/cnpj') idxCpf = idx;
                   if (head.includes('instalação') || head.includes('agendamento') || head.includes('data de agendamento')) idxDataAgendamento = idx;
