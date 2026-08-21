@@ -1037,7 +1037,9 @@
                   dataVencimentoIso: dataVencIso,
                   dataVencimentoFormatada: dataVencFormatada,
                   statusPgto: idxStatusPgto !== -1 ? String(cols[idxStatusPgto]).toUpperCase().trim() : 'PENDENTE',
-                  obsPgto: idxObsPgto !== -1 ? String(cols[idxObsPgto]).trim() : ''
+                  obsPgto: idxObsPgto !== -1 ? String(cols[idxObsPgto]).trim() : '',
+                  motivo: idxMotivo !== -1 && cols[idxMotivo] ? String(cols[idxMotivo]).trim() : ''
+
                 });
               }
 
