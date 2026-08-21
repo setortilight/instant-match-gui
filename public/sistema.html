@@ -1445,6 +1445,85 @@
 
       useEffect(() => { setProcessCurrentPage(1); }, [filteredProcessData.length]);
 
+      // CÁLCULOS FPD
+      const fpdFilteredData = useMemo(() => {
+        return validFpdSales.filter(item => {
+          // Filtro de Mês (Data de Vencimento ou Data Venda)
+          if (fpdSelectedMonth !== 'TODOS') {
+            const dateStr = item.dataVencimentoIso || item.dataVendaIso;
+            if (dateStr) {
+              const m = parseInt(dateStr.split('-')[1], 10);
+              if (m !== Number(fpdSelectedMonth)) return false;
+            } else {
+              return false;
+            }
+          }
+          if (fpdFilterEquipe !== 'TODAS' && item.equipe !== fpdFilterEquipe) return false;
+          if (fpdFilterStatusPgto !== 'TODOS' && item.statusPgto !== fpdFilterStatusPgto) return false;
+          if (fpdFilterVendedor !== 'TODOS' && item.vendedor !== fpdFilterVendedor) return false;
+          
+          // Lógica de Faixa
+          if (fpdFilterFaixa !== 'TODOS') {
+            const faixa = calculateFpdFaixa(item.dataVencimentoIso);
+            if (faixa !== fpdFilterFaixa) return false;
+          }
+
+          if (fpdSearchText) {
+            const searchLower = fpdSearchText.toLowerCase();
+            return (item.cliente || '').toLowerCase().includes(searchLower) ||
+                   (item.cpf || '').includes(searchLower) ||
+                   (item.os || '').includes(searchLower);
+          }
+          return true;
+        });
+      }, [validFpdSales, fpdSelectedMonth, fpdFilterEquipe, fpdFilterStatusPgto, fpdFilterFaixa, fpdFilterVendedor, fpdSearchText]);
+
+      const calculateFpdFaixa = (dataVencIso) => {
+        if (!dataVencIso) return 'N/A';
+        const venc = new Date(dataVencIso);
+        const hoje = new Date();
+        const diffDays = Math.floor((hoje - venc) / (1000 * 60 * 60 * 24));
+        if (diffDays < 10) return 'Recent';
+        if (diffDays <= 15) return '10 a 15';
+        if (diffDays <= 30) return '15 a 30';
+        if (diffDays <= 45) return '30 a 45';
+        if (diffDays <= 55) return '45 a 55';
+        if (diffDays <= 60) return '55 a 60';
+        return '+ 61';
+      };
+
+      const fpdMetrics = useMemo(() => {
+        const total = fpdFilteredData.length;
+        const pago = fpdFilteredData.filter(d => d.statusPgto === 'PAGO').length;
+        const naoPago = total - pago;
+        
+        const counts = { '10 a 15': 0, '15 a 30': 0, '30 a 45': 0, '45 a 55': 0, '55 a 60': 0, '+ 61': 0 };
+        fpdFilteredData.forEach(item => {
+          const faixa = calculateFpdFaixa(item.dataVencimentoIso);
+          if (counts[faixa] !== undefined) counts[faixa]++;
+        });
+
+        return { total, pago, naoPago, ...counts };
+      }, [fpdFilteredData]);
+
+      const fpdTimelineData = useMemo(() => {
+        const months = Array.from({length: 12}, (_, i) => i + 1);
+        return months.map(m => {
+          const count = validFpdSales.filter(item => {
+            const dateStr = item.dataVencimentoIso || item.dataVendaIso;
+            return dateStr && parseInt(dateStr.split('-')[1], 10) === m;
+          }).length;
+          return count;
+        });
+      }, [validFpdSales]);
+
+      const paginatedFpdData = useMemo(() => {
+        const start = (fpdCurrentPage - 1) * fpdItemsPerPage;
+        return fpdFilteredData.slice(start, start + fpdItemsPerPage);
+      }, [fpdFilteredData, fpdCurrentPage, fpdItemsPerPage]);
+
+      useEffect(() => { setFpdCurrentPage(1); }, [fpdFilteredData.length]);
+
       // 6. EFEITO DOS GRÁFICOS (CHART.JS)
       useEffect(() => {
         if (!window.Chart) return;
