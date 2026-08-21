@@ -2602,6 +2602,13 @@
                       </select>
                     </div>
                     <div className="flex flex-col gap-1.5">
+                      <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Vendedor</label>
+                      <select value={fpdFilterVendedor} onChange={(e) => setFpdFilterVendedor(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-700 outline-none cursor-pointer shadow-sm">
+                        <option value="TODOS">Todos os Vendedores</option>
+                        {availableSellers.map(v => <option key={v} value={v}>{v}</option>)}
+                      </select>
+                    </div>
+                    <div className="flex flex-col gap-1.5">
                       <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Status Pagamento</label>
                       <select value={fpdFilterStatusPgto} onChange={(e) => setFpdFilterStatusPgto(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-700 outline-none cursor-pointer shadow-sm">
                         <option value="TODOS">Todos os Status</option>
