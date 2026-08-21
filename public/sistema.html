@@ -970,6 +970,24 @@
                     localStorage.setItem('lightBiEficaciaAnterior', JSON.stringify(merged));
                     return merged;
                   });
+                } else if (type === 'fpd_atual') {
+                  setFpdSalesData(prev => {
+                    const merged = [...prev];
+                    parsed.forEach(newItem => {
+                      const matchIdx = merged.findIndex(old => 
+                        (newItem.os && String(old.os) === String(newItem.os)) ||
+                        (newItem.cpf && String(old.cpf) === String(newItem.cpf)) ||
+                        (old.cliente === newItem.cliente && old.dataVendaIso === newItem.dataVendaIso)
+                      );
+                      if (matchIdx > -1) {
+                        merged[matchIdx] = { ...merged[matchIdx], ...newItem };
+                      } else {
+                        merged.push(newItem);
+                      }
+                    });
+                    localStorage.setItem('lightBiFpdAtual', JSON.stringify(merged));
+                    return merged;
+                  });
                 }
 
                 if (supabase) {
