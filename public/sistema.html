@@ -2558,14 +2558,35 @@
                 </div>
               </div>
 
-              {/* Filtro de Meses Linear */}
-              <div className="flex flex-col gap-3">
-                <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Linha do Tempo (Meses)</label>
-                <div className="flex flex-wrap gap-2 overflow-x-auto pb-2 custom-scrollbar">
-                  <button onClick={() => setFpdSelectedMonth('TODOS')} className={`min-w-[40px] h-10 rounded-xl text-[10px] font-black transition-all border cursor-pointer ${fpdSelectedMonth === 'TODOS' ? 'bg-emerald-500 text-white border-emerald-600 shadow-md' : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-50'}`}>TODO</button>
-                  {months.map(m => (
-                    <button key={m} onClick={() => setFpdSelectedMonth(m)} className={`min-w-[40px] h-10 rounded-xl text-[10px] font-black transition-all border cursor-pointer ${fpdSelectedMonth === m ? 'bg-emerald-500 text-white border-emerald-600 shadow-md' : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-50'}`}>{m}</button>
-                  ))}
+              {/* Filtros: Mês e Equipe */}
+              <div className="flex flex-col md:flex-row gap-6 mt-4 pb-4 border-b border-slate-50">
+                <div className="flex flex-col gap-3 flex-1">
+                  <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-2">
+                    <Icon name="calendar" className="w-3 h-3" /> Linha do Tempo (Meses)
+                  </label>
+                  <div className="flex flex-wrap gap-2 overflow-x-auto pb-2 custom-scrollbar">
+                    <button onClick={() => setFpdSelectedMonth('TODOS')} className={`min-w-[60px] h-10 rounded-xl text-[10px] font-black transition-all border cursor-pointer ${fpdSelectedMonth === 'TODOS' ? 'bg-emerald-500 text-white border-emerald-600 shadow-md' : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-50'}`}>TODOS</button>
+                    {['01','02','03','04','05','06','07','08','09','10','11','12'].map(m => {
+                      const monthLabels = { '01':'JAN','02':'FEV','03':'MAR','04':'ABR','05':'MAI','06':'JUN','07':'JUL','08':'AGO','09':'SET','10':'OUT','11':'NOV','12':'DEZ' };
+                      return (
+                        <button key={m} onClick={() => setFpdSelectedMonth(m)} className={`min-w-[45px] h-10 rounded-xl text-[10px] font-black transition-all border cursor-pointer ${fpdSelectedMonth === m ? 'bg-emerald-500 text-white border-emerald-600 shadow-md' : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-50'}`}>{monthLabels[m]}</button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-3 min-w-[200px]">
+                  <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1 flex items-center gap-2">
+                    <Icon name="users" className="w-3 h-3" /> Filtrar Equipe
+                  </label>
+                  <select 
+                    value={fpdFilterEquipe} 
+                    onChange={(e) => setFpdFilterEquipe(e.target.value)}
+                    className="h-10 w-full bg-white border border-slate-200 rounded-xl px-4 text-[10px] font-black text-slate-700 outline-none cursor-pointer shadow-sm focus:ring-2 focus:ring-emerald-500/20 transition-all uppercase"
+                  >
+                    <option value="TODAS">TODAS AS EQUIPES</option>
+                    {availableTeams.map(eq => <option key={eq} value={eq}>{eq}</option>)}
+                  </select>
                 </div>
               </div>
             </div>
@@ -2681,7 +2702,7 @@
                     ))}
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Equipe</label>
                       <select value={fpdFilterEquipe} onChange={(e) => setFpdFilterEquipe(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-700 outline-none cursor-pointer shadow-sm">
@@ -2717,13 +2738,13 @@
                         <option value="+ 61">+ 61 Dias</option>
                       </select>
                     </div>
-                    <div className="flex flex-col gap-1.5">
+                    <div className="flex flex-col gap-1.5 lg:col-span-2">
                       <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Pesquisar Cliente / CPF / OS</label>
                       <div className="relative">
                         <input type="text" placeholder="Pesquisar..." value={fpdSearchText} onChange={(e) => setFpdSearchText(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-4 pr-4 py-2.5 text-xs font-medium text-slate-700 outline-none focus:border-emerald-500 shadow-sm" />
                       </div>
                     </div>
-                    <div className="flex items-end">
+                    <div className="flex items-end lg:col-span-1">
                       <button onClick={() => { setFpdFilterEquipe('TODAS'); setFpdFilterStatusPgto('TODOS'); setFpdFilterFaixa('TODOS'); setFpdSearchText(''); }} className="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-black text-[10px] uppercase py-2.5 rounded-xl transition cursor-pointer border border-slate-200">Limpar Filtros</button>
                     </div>
                   </div>
