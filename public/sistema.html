@@ -1774,6 +1774,86 @@
         }
       }, [activeTab, dashboardFilteredSales, qualidadeData]);
 
+      // 6.1 EFEITO DOS GRÁFICOS FPD
+      useEffect(() => {
+        if (!window.Chart || activeTab !== 'fpd') return;
+        
+        const fpdEqCanvas = canvasFpdEquipeRef.current;
+        const fpdVendCanvas = canvasFpdVendedorRef.current;
+        
+        if (fpdEqCanvas) {
+          const teamStats = {};
+          fpdFilteredData.forEach(item => {
+            const eq = item.equipe || 'Geral';
+            if (!teamStats[eq]) teamStats[eq] = { vendas: 0, pagos: 0 };
+            teamStats[eq].vendas++;
+            if (item.statusPgto === 'PAGO') teamStats[eq].pagos++;
+          });
+          
+          const sortedTeams = Object.keys(teamStats).sort((a,b) => teamStats[b].vendas - teamStats[a].vendas).slice(0, 10);
+          const labels = sortedTeams;
+          const salesDataArr = sortedTeams.map(t => teamStats[t].vendas);
+          const fpdPercArr = sortedTeams.map(t => teamStats[t].vendas > 0 ? ((1 - (teamStats[t].pagos / teamStats[t].vendas)) * 100).toFixed(1) : 0);
+
+          chartInstancesRef.current.fpdEquipe = new Chart(fpdEqCanvas, {
+            type: 'bar',
+            data: {
+              labels,
+              datasets: [
+                { label: 'Vendas', data: salesDataArr, backgroundColor: '#3b82f6', borderRadius: 4, yAxisID: 'y' },
+                { label: '% FPD', data: fpdPercArr, type: 'line', borderColor: '#ef4444', backgroundColor: '#ef4444', borderWidth: 2, yAxisID: 'y1' }
+              ]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { display: true, labels: { font: { size: 9, weight: 'bold' } } }, datalabels: { display: false } },
+              scales: { 
+                y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { font: { size: 9 } } },
+                y1: { beginAtZero: true, position: 'right', grid: { display: false }, ticks: { font: { size: 9 }, callback: (v) => v + '%' } },
+                x: { grid: { display: false }, ticks: { font: { size: 9 } } }
+              }
+            }
+          });
+        }
+
+        if (fpdVendCanvas) {
+          const vendStats = {};
+          fpdFilteredData.forEach(item => {
+            const v = item.vendedor || 'Geral';
+            if (!vendStats[v]) vendStats[v] = { vendas: 0, pagos: 0 };
+            vendStats[v].vendas++;
+            if (item.statusPgto === 'PAGO') vendStats[v].pagos++;
+          });
+          
+          const sortedVends = Object.keys(vendStats).sort((a,b) => vendStats[b].vendas - vendStats[a].vendas).slice(0, 10);
+          const labels = sortedVends;
+          const salesDataArr = sortedVends.map(v => vendStats[v].vendas);
+          const fpdPercArr = sortedVends.map(v => vendStats[v].vendas > 0 ? ((1 - (vendStats[v].pagos / vendStats[v].vendas)) * 100).toFixed(1) : 0);
+
+          chartInstancesRef.current.fpdVendedor = new Chart(fpdVendCanvas, {
+            type: 'bar',
+            data: {
+              labels,
+              datasets: [
+                { label: 'Vendas', data: salesDataArr, backgroundColor: '#10b981', borderRadius: 4, yAxisID: 'y' },
+                { label: '% FPD', data: fpdPercArr, type: 'line', borderColor: '#ef4444', backgroundColor: '#ef4444', borderWidth: 2, yAxisID: 'y1' }
+              ]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { display: true, labels: { font: { size: 9, weight: 'bold' } } }, datalabels: { display: false } },
+              scales: { 
+                y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { font: { size: 9 } } },
+                y1: { beginAtZero: true, position: 'right', grid: { display: false }, ticks: { font: { size: 9 }, callback: (v) => v + '%' } },
+                x: { grid: { display: false }, ticks: { font: { size: 9 } } }
+              }
+            }
+          });
+        }
+      }, [activeTab, fpdFilteredData]);
+
       // 7. FUNÇÕES DE RENDERIZAÇÃO DAS ABAS
       const renderVendasTab = () => (
         <div className="space-y-6 max-w-7xl mx-auto">
