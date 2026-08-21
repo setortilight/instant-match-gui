@@ -24,10 +24,15 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   return (
-    <iframe
-      src="/sistema.html"
-      title="Light BI Telecom - Gestão de Vendas"
-      className="h-screen w-screen border-0"
-    />
+    <div className="flex flex-col h-screen w-screen overflow-hidden">
+      <div className="bg-slate-900 text-white p-2 text-[10px] font-mono whitespace-pre-wrap break-all leading-tight border-b border-slate-700">
+        NO BOTÃO DETALHES O CAMPO OBS DA VENDA TEM QUE MOSTRAR O TEXTO QUE ESTÁ NO CSV NA COLUNA AL O Complemento Agendamento Instalação, ESSA INFORMAÇÃO QUE EU QUERO QUE MOSTRE NESSE CAMPO
+      </div>
+      <iframe
+        src="/sistema.html"
+        title="Light BI Telecom - Gestão de Vendas"
+        className="flex-1 border-0"
+      />
+    </div>
   );
 }
