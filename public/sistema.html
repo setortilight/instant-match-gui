@@ -91,8 +91,8 @@
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhjbnpub3Fmb2Vmd2lsaWJyb3B5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2Mjg1MTYsImV4cCI6MjEwMjIwNDUxNn0.aTHgSBhD10yfgXsVQuPFadmnmMVtl_lkE_SdkVLxJVo";
     const BUCKET_NAME = "bi-files";
 
-    const supabase = (SUPABASE_URL && SUPABASE_URL !== "SUA_URL_DO_SUPABASE")
-      ? window.supabase?.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    const supabase = (typeof window.supabase !== 'undefined' && SUPABASE_URL && SUPABASE_URL !== "SUA_URL_DO_SUPABASE")
+      ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
           realtime: { params: { eventsPerSecond: 10 } },
           global: {
             // Evita cache do navegador/CDN nas leituras (metas sempre frescas)
@@ -959,16 +959,11 @@
                     return merged;
                   });
                 }
-                      }
-                    });
-                    localStorage.setItem('lightBiEficaciaAnterior', JSON.stringify(merged));
-                    return merged;
-                  });
-                }
 
                 if (supabase) {
                   try {
-                    const blob = new Blob([JSON.stringify(parsed)], { type: 'application/json' });
+                    const dataToSend = type === 'eficacia_anterior' ? (await new Promise(r => setEficaciaPreviousSalesData(prev => { r(prev); return prev; }))) : parsed;
+                    const blob = new Blob([JSON.stringify(dataToSend)], { type: 'application/json' });
                     await supabase.storage.from(BUCKET_NAME).upload(`configs/${fileName}.json`, blob, { upsert: true, contentType: 'application/json', cacheControl: '0' });
                   } catch(e) { console.log('Envio bloqueado', e); }
                 }
