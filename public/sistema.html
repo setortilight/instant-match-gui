@@ -2973,41 +2973,66 @@
               <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-2xl max-w-xl w-full p-6 md:p-8 space-y-6 max-h-[90vh] overflow-y-auto custom-scrollbar">
                 <div className="flex justify-between items-center border-b pb-4">
                   <div>
-                    <h3 className="text-lg font-black uppercase text-slate-900 italic">Detalhes da Venda</h3>
-                    <p className="text-[10px] text-slate-400 font-bold">Informações completas do cliente e da OS</p>
+                    <h3 className="text-lg font-black uppercase text-slate-900 italic">
+                      {selectedSaleDetails.modalType === 'fpd' ? 'Detalhes FPD' : 'Detalhes da Venda'}
+                    </h3>
+                    <p className="text-[10px] text-slate-400 font-bold">Informações completas do registro</p>
                   </div>
                   <button onClick={() => setSelectedSaleDetails(null)} className="w-10 h-10 bg-slate-100 hover:bg-slate-200 rounded-full flex items-center justify-center text-slate-600 font-bold cursor-pointer">✕</button>
                 </div>
+                
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                   <div className="bg-slate-50 p-3 rounded-2xl">
                     <span className="text-[9px] font-black uppercase text-slate-400">Cliente</span>
                     <p className="font-bold text-slate-800 text-sm mt-0.5">{selectedSaleDetails.cliente}</p>
                   </div>
                   <div className="bg-slate-50 p-3 rounded-2xl">
+                    <span className="text-[9px] font-black uppercase text-slate-400">CPF</span>
+                    <p className="font-bold text-slate-800 text-sm mt-0.5">{selectedSaleDetails.cpf || 'Não informado'}</p>
+                  </div>
+                  <div className="bg-slate-50 p-3 rounded-2xl">
                     <span className="text-[9px] font-black uppercase text-slate-400">Telefones Contatos</span>
                     <p className="font-bold text-emerald-600 text-sm mt-0.5 flex items-center gap-1.5"><Icon name="phone" className="w-3.5 h-3.5"/> {selectedSaleDetails.telefone || 'Não informado'}</p>
                   </div>
                   <div className="bg-slate-50 p-3 rounded-2xl">
-                    <span className="text-[9px] font-black uppercase text-slate-400">Plano Contratado</span>
-                    <p className="font-bold text-indigo-600 text-sm mt-0.5">{selectedSaleDetails.plano || 'Não informado'}</p>
-                  </div>
-                  <div className="bg-slate-50 p-3 rounded-2xl">
-                    <span className="text-[9px] font-black uppercase text-slate-400">Status Eficácia</span>
-                    <p className="font-bold text-slate-800 text-sm mt-0.5">{selectedSaleDetails.statusAgendamento || selectedSaleDetails.status || 'Não informado'}</p>
+                    <span className="text-[9px] font-black uppercase text-slate-400">Plano / Valor</span>
+                    <p className="font-bold text-indigo-600 text-sm mt-0.5">{selectedSaleDetails.plano || 'Não informado'} - R$ {selectedSaleDetails.valor?.toFixed(2)}</p>
                   </div>
                   <div className="bg-slate-50 p-3 rounded-2xl sm:col-span-2">
                     <span className="text-[9px] font-black uppercase text-slate-400">Endereço</span>
                     <p className="font-bold text-slate-800 text-sm mt-0.5">{selectedSaleDetails.cidade || 'Não informado'}</p>
                   </div>
+                  
+                  {selectedSaleDetails.modalType === 'fpd' && (
+                    <>
+                      <div className="bg-rose-50 p-3 rounded-2xl border border-rose-100">
+                        <span className="text-[9px] font-black uppercase text-rose-700">Vencimento</span>
+                        <p className="font-black text-rose-800 text-sm mt-0.5">{selectedSaleDetails.dataVencimentoFormatada || '-'}</p>
+                      </div>
+                      <div className="bg-emerald-50 p-3 rounded-2xl border border-emerald-100">
+                        <span className="text-[9px] font-black uppercase text-emerald-700">Status Pgto</span>
+                        <p className="font-black text-emerald-800 text-sm mt-0.5 uppercase">{selectedSaleDetails.statusPgto || 'PENDENTE'}</p>
+                      </div>
+                      <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 sm:col-span-2">
+                        <span className="text-[9px] font-black uppercase text-slate-400">Observação Pagamento</span>
+                        <p className="font-medium text-slate-700 text-xs mt-1 leading-relaxed">{selectedSaleDetails.obsPgto || 'Nenhuma observação de pagamento registrada.'}</p>
+                      </div>
+                    </>
+                  )}
+
                   <div className="bg-amber-50/60 p-3 rounded-2xl border border-amber-100 sm:col-span-2">
                     <span className="text-[9px] font-black uppercase text-amber-700">Obs Endereço</span>
                     <p className="font-medium text-slate-700 text-xs mt-1 leading-relaxed">{selectedSaleDetails.obsEndereco || 'Nenhuma observação de endereço registada.'}</p>
                   </div>
                 </div>
-                <div className="bg-emerald-50/60 p-4 rounded-2xl border border-emerald-100">
-                  <span className="text-[9px] font-black uppercase text-emerald-700">OBS DA VENDA</span>
-                  <p className="font-medium text-slate-700 text-xs mt-1 leading-relaxed">{selectedSaleDetails.obsInstalacao || selectedSaleDetails.obsVenda || 'Nenhuma observação registada.'}</p>
-                </div>
+
+                {selectedSaleDetails.modalType !== 'fpd' && (
+                  <div className="bg-emerald-50/60 p-4 rounded-2xl border border-emerald-100">
+                    <span className="text-[9px] font-black uppercase text-emerald-700">OBS DA VENDA</span>
+                    <p className="font-medium text-slate-700 text-xs mt-1 leading-relaxed">{selectedSaleDetails.obsInstalacao || selectedSaleDetails.obsVenda || 'Nenhuma observação registada.'}</p>
+                  </div>
+                )}
+
                 <button onClick={() => setSelectedSaleDetails(null)} className="w-full bg-slate-900 hover:bg-slate-800 text-white font-black uppercase text-xs py-3.5 rounded-2xl shadow cursor-pointer">Fechar</button>
               </div>
             </div>
