@@ -479,6 +479,7 @@
       const [filterDataVendaFim, setFilterDataVendaFim] = useState('');
       const [filterDataAgendInicio, setFilterDataAgendInicio] = useState('');
       const [filterDataAgendFim, setFilterDataAgendFim] = useState('');
+      const [eficaciaSelectedMonth, setEficaciaSelectedMonth] = useState('TODOS');
 
       const [processSearchText, setProcessSearchText] = useState('');
       const [processSortConfig, setProcessSortConfig] = useState({ key: '', direction: 'asc' });
@@ -785,7 +786,7 @@
 
               let idxCliente = -1, idxVendedor = -1, idxEquipe = -1, idxPlano = -1, idxValor = -1, idxStatus = -1, idxDataVenda = -1;
               let idxCpf = -1, idxCidade = -1, idxOs = -1, idxTurno = -1, idxTelefone = -1, idxObs = -1, idxDataAgendamento = -1, idxStatusAgendamento = -1;
-              let idxObsEndereco = -1, idxObsVenda = -1;
+              let idxObsEndereco = -1, idxObsVenda = -1, idxComplementoInstalacao = -1;
 
               headers.forEach((h, idx) => {
                 if (h.includes('cliente') || h.includes('nome')) if (idxCliente === -1) idxCliente = idx;
@@ -805,6 +806,7 @@
                 if (h.includes('obs da venda') || h.includes('observação') || idx === 44) if (idxObsVenda === -1) idxObsVenda = idx;
                 if (h.includes('agendamento') && (h.includes('data') || h.includes('dt'))) if (idxDataAgendamento === -1) idxDataAgendamento = idx;
                 if (h.includes('status') && h.includes('agendamento')) if (idxStatusAgendamento === -1) idxStatusAgendamento = idx;
+                if (h.includes('complemento agendamento instalação') || idx === 37) if (idxComplementoInstalacao === -1) idxComplementoInstalacao = idx;
               });
 
               if (idxTelefone === -1) idxTelefone = 4;
@@ -911,6 +913,7 @@
                   telefone: idxTelefone !== -1 && cols[idxTelefone] ? String(cols[idxTelefone]).trim() : '',
                   obsEndereco: idxObsEndereco !== -1 && cols[idxObsEndereco] ? String(cols[idxObsEndereco]).trim() : '',
                   obsVenda: idxObsVenda !== -1 && cols[idxObsVenda] ? String(cols[idxObsVenda]).trim() : '',
+                  obsInstalacao: idxComplementoInstalacao !== -1 && cols[idxComplementoInstalacao] ? String(cols[idxComplementoInstalacao]).trim() : '',
                   dataAgendamento: dataAgend
                 });
               }
@@ -1016,6 +1019,12 @@
         return base.filter(item => {
           const iso = item.dataVendaIso;
           if (!iso) return false;
+          
+          if (eficaciaSelectedMonth !== 'TODOS') {
+            const month = iso.split('-')[1];
+            if (month !== eficaciaSelectedMonth) return false;
+          }
+
           if (eficaciaPeriodoInicio && iso < eficaciaPeriodoInicio) return false;
           if (eficaciaPeriodoFim && iso > eficaciaPeriodoFim) return false;
           return true;
@@ -1304,7 +1313,7 @@
           fechado: { count: fechado, percent: getPercent(fechado) },
           tecnico: { count: tecnico, percent: getPercent(tecnico) }
         };
-      }, [dashboardFilteredSales, dashboardFilteredPreviousSales, eficaciaDataSource, eficaciaPeriodoInicio, eficaciaPeriodoFim, filterEquipe]);
+      }, [dashboardFilteredSales, dashboardFilteredPreviousSales, eficaciaDataSource, eficaciaPeriodoInicio, eficaciaPeriodoFim, filterEquipe, eficaciaSelectedMonth]);
 
       const eficaciaFilterOptions = useMemo(() => {
         const equipes = new Set();
@@ -1326,7 +1335,7 @@
           vendedores: Array.from(vendedores).sort(),
           turnos: Array.from(turnos).sort()
         };
-      }, [validSales, validPreviousSales, eficaciaDataSource]);
+      }, [validSales, validPreviousSales, eficaciaDataSource, eficaciaSelectedMonth]);
 
       const filteredProcessData = useMemo(() => {
         const baseSales = getEficaciaBase(validSales, validPreviousSales);
@@ -2000,15 +2009,34 @@
                 </div>
               </div>
 
-              {eficaciaSubTab === 'dashboard' && (
-                <div className="flex w-full lg:w-auto items-center gap-3">
+              <div className="flex w-full lg:w-auto items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-slate-500 uppercase hidden sm:block">Mês:</span>
+                  <select value={eficaciaSelectedMonth} onChange={(e) => setEficaciaSelectedMonth(e.target.value)} className="bg-slate-50 border border-slate-200 px-4 py-2 rounded-xl text-xs font-bold text-slate-700 outline-none cursor-pointer">
+                    <option value="TODOS">TODOS OS MESES</option>
+                    <option value="01">JANEIRO</option>
+                    <option value="02">FEVEREIRO</option>
+                    <option value="03">MARÇO</option>
+                    <option value="04">ABRIL</option>
+                    <option value="05">MAIO</option>
+                    <option value="06">JUNHO</option>
+                    <option value="07">JULHO</option>
+                    <option value="08">AGOSTO</option>
+                    <option value="09">SETEMBRO</option>
+                    <option value="10">OUTUBRO</option>
+                    <option value="11">NOVEMBRO</option>
+                    <option value="12">DEZEMBRO</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center gap-2">
                   <span className="text-xs font-bold text-slate-500 uppercase hidden sm:block">Equipe:</span>
                   <select value={filterEquipe} onChange={(e) => setFilterEquipe(e.target.value)} className="w-full bg-slate-50 border border-slate-200 px-4 py-2 rounded-xl text-xs font-bold text-slate-700 outline-none cursor-pointer">
                     <option value="TODAS">TODAS AS EQUIPES</option>
                     {eficaciaFilterOptions.equipes.map(eq => <option key={eq} value={eq}>{eq}</option>)}
                   </select>
                 </div>
-              )}
+              </div>
             </div>
 
             {eficaciaSubTab === 'dashboard' ? (
@@ -2019,6 +2047,9 @@
               </div>
             ) : (
               <>
+                <div className="mt-6">
+                  <SummaryCards stats={dashboardEficaciaStats} activeStatusKey={filterCardStatusKey} onCardClick={(statusKey) => setFilterCardStatusKey(statusKey === filterCardStatusKey ? 'TODOS' : statusKey)} />
+                </div>
                 <div className="bg-white rounded-[1.5rem] shadow-sm border border-slate-100 p-6 transition-all mt-6">
                   <button onClick={() => setShowFilters(!showFilters)} className="w-full flex items-center justify-between group outline-none cursor-pointer">
                     <div className="flex items-center gap-3">
@@ -2550,8 +2581,8 @@
                   </div>
                 </div>
                 <div className="bg-emerald-50/60 p-4 rounded-2xl border border-emerald-100">
-                  <span className="text-[9px] font-black uppercase text-emerald-700">Obs da Venda</span>
-                  <p className="font-medium text-slate-700 text-xs mt-1 leading-relaxed">{selectedSaleDetails.obsVenda || 'Nenhuma observação de venda registada.'}</p>
+                  <span className="text-[9px] font-black uppercase text-emerald-700">OBS DA INSTALAÇÃO</span>
+                  <p className="font-medium text-slate-700 text-xs mt-1 leading-relaxed">{selectedSaleDetails.obsInstalacao || selectedSaleDetails.obsVenda || 'Nenhuma observação registada.'}</p>
                 </div>
                 <button onClick={() => setSelectedSaleDetails(null)} className="w-full bg-slate-900 hover:bg-slate-800 text-white font-black uppercase text-xs py-3.5 rounded-2xl shadow cursor-pointer">Fechar</button>
               </div>
