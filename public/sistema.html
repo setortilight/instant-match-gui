@@ -515,7 +515,8 @@
       const [fpdData, setFpdData] = useState([]);
       const [fpdSalesData, setFpdSalesData] = useState([]); // Dados consolidados FPD
       const [fpdSubTab, setFpdSubTab] = useState('dashboard');
-      const [fpdSelectedMonth, setFpdSelectedMonth] = useState(new Date().getMonth() + 1); // 1-12
+      const [fpdSelectedMonths, setFpdSelectedMonths] = useState(['TODOS']);
+      const [fpdFiltersVisible, setFpdFiltersVisible] = useState(true);
       const [fpdFilterEquipe, setFpdFilterEquipe] = useState('TODAS');
       const [fpdFilterStatusPgto, setFpdFilterStatusPgto] = useState('TODOS');
       const [fpdFilterFaixa, setFpdFilterFaixa] = useState('TODOS');
