@@ -893,10 +893,24 @@
               let idxDataVencimento = -1, idxStatusPgto = -1, idxObsPgto = -1;
               
               headers.forEach((h, idx) => {
-                const head = h.toLowerCase();
+                const head = h.toLowerCase().trim();
                 if (head.includes('vencimento')) idxDataVencimento = idx;
                 if (head.includes('status') && (head.includes('pgto') || head.includes('pagamento'))) idxStatusPgto = idx;
                 if (head.includes('obs') && (head.includes('pgto') || head.includes('pagamento'))) idxObsPgto = idx;
+                
+                // Forçar índices específicos para FPD Novo se necessário
+                if (type === 'fpd_atual') {
+                  if (head === 'os') idxOs = idx;
+                  if (head === 'cliente') idxCliente = idx;
+                  if (head === 'cpf') idxCpf = idx;
+                  if (head.includes('instalação')) idxDataAgendamento = idx;
+                  if (head === 'vendedor') idxVendedor = idx;
+                  if (head === 'equipe') idxEquipe = idx;
+                  if (head.includes('telefone')) idxTelefone = idx;
+                  if (head.includes('plano')) idxPlano = idx;
+                  if (head.includes('cidade')) idxCidade = idx;
+                  if (head.includes('obs endereço')) idxObsEndereco = idx;
+                }
               });
 
               if (idxStatus === -1) idxStatus = 38;
