@@ -2640,17 +2640,45 @@
                 {/* Setor Processos: Filtros e Tabela */}
                 <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-6">
                   {/* Cards Replicados no topo do Processo */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-11 gap-2 pb-4 border-b border-slate-100">
-                    <CardFpd label="Total" count={fpdMetrics.total} colorClass="bg-slate-900 text-white border-slate-900" />
-                    <CardFpd label="Pago" count={fpdMetrics.pago} colorClass="bg-emerald-50 text-emerald-700 border-emerald-200" />
-                    <CardFpd label="Não Pago" count={fpdMetrics.naoPago} colorClass="bg-rose-50 text-rose-700 border-rose-200" />
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-11 gap-4 pb-4 border-b border-slate-100">
+                    <div className="bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border p-4 border-l-4 border-l-slate-800 flex flex-col justify-between hover:scale-[1.02] transition-all cursor-default">
+                      <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider text-center">Total</span>
+                      <div className="flex items-center justify-center mt-2">
+                        <span className="text-xl font-black text-slate-800">{fpdMetrics.total}</span>
+                      </div>
+                    </div>
+                    <div className="bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border p-4 border-l-4 border-l-emerald-500 flex flex-col justify-between hover:scale-[1.02] transition-all cursor-default">
+                      <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider text-center">Pago</span>
+                      <div className="flex flex-col items-center mt-2">
+                        <span className="text-xl font-black text-slate-800">{fpdMetrics.pago}</span>
+                        <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md mt-1">{fpdMetrics.total > 0 ? ((fpdMetrics.pago / fpdMetrics.total) * 100).toFixed(0) : '0'}%</span>
+                      </div>
+                    </div>
+                    <div className="bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border p-4 border-l-4 border-l-rose-500 flex flex-col justify-between hover:scale-[1.02] transition-all cursor-default">
+                      <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider text-center">N. Pago</span>
+                      <div className="flex flex-col items-center mt-2">
+                        <span className="text-xl font-black text-slate-800">{fpdMetrics.naoPago}</span>
+                        <span className="text-[9px] font-bold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded-md mt-1">{fpdMetrics.total > 0 ? ((fpdMetrics.naoPago / fpdMetrics.total) * 100).toFixed(0) : '0'}%</span>
+                      </div>
+                    </div>
+
                     <div className="col-span-1 hidden xl:flex items-center justify-center opacity-30 text-slate-300 font-black text-xl">|</div>
-                    <CardFpd label="10-15" count={fpdMetrics['10 a 15']} colorClass="bg-slate-50 text-slate-700 border-slate-200" />
-                    <CardFpd label="15-30" count={fpdMetrics['15 a 30']} colorClass="bg-slate-50 text-slate-700 border-slate-200" />
-                    <CardFpd label="30-45" count={fpdMetrics['30 a 45']} colorClass="bg-slate-50 text-slate-700 border-slate-200" />
-                    <CardFpd label="45-55" count={fpdMetrics['45 a 55']} colorClass="bg-slate-50 text-slate-700 border-slate-200" />
-                    <CardFpd label="55-60" count={fpdMetrics['55 a 60']} colorClass="bg-slate-50 text-slate-700 border-slate-200" />
-                    <CardFpd label="+ 61" count={fpdMetrics['+ 61']} colorClass="bg-rose-100 text-rose-800 border-rose-200" />
+
+                    {[
+                      { label: '10-15', key: '10 a 15', color: 'border-l-slate-400' },
+                      { label: '15-30', key: '15 a 30', color: 'border-l-slate-400' },
+                      { label: '30-45', key: '30 a 45', color: 'border-l-slate-400' },
+                      { label: '45-55', key: '45 a 55', color: 'border-l-slate-400' },
+                      { label: '55-60', key: '55 a 60', color: 'border-l-slate-400' },
+                      { label: '+ 61', key: '+ 61', color: 'border-l-rose-600' }
+                    ].map(card => (
+                      <div key={card.key} className={`bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border p-3 border-l-4 ${card.color} flex flex-col justify-between hover:scale-[1.02] transition-all cursor-default`}>
+                        <span className="text-slate-400 text-[9px] font-bold uppercase tracking-wider text-center">{card.label}</span>
+                        <div className="flex items-center justify-center mt-2">
+                          <span className="text-lg font-black text-slate-800">{fpdMetrics[card.key]}</span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
