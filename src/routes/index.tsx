@@ -25,9 +25,6 @@ export const Route = createFileRoute("/")({
 function Index() {
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden">
-      <div className="bg-amber-50 border-b border-amber-200 p-3 text-center text-amber-900 text-xs font-black uppercase tracking-widest z-50">
-        QUERO UM OUTRO FILTRO DE DATAS; DE ATÉ.
-      </div>
       <iframe
         src="/sistema.html"
         title="Light BI Telecom - Gestão de Vendas"
