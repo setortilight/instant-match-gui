@@ -1046,6 +1046,11 @@
         return filtered;
       }, [eficaciaPreviousSalesData]);
 
+      const validFpdSales = useMemo(() => {
+        const filtered = fpdSalesData.filter(item => !isInvalidClient(item.cliente));
+        return filtered;
+      }, [fpdSalesData]);
+
       const dashboardFilteredSales = useMemo(() => {
         let list = validSales;
         if (selectedTeamFilter !== 'TODAS') list = list.filter(v => v.equipe === selectedTeamFilter);
