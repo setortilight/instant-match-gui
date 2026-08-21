@@ -2776,18 +2776,20 @@
                   <div className="col-span-1 hidden xl:flex items-center justify-center opacity-30 text-slate-300 font-black text-2xl">|</div>
 
                   {[
-                    { label: '10-15', key: '10 a 15', color: 'border-l-yellow-400', bg: 'bg-yellow-50/30' },
-                    { label: '15-30', key: '15 a 30', color: 'border-l-orange-400', bg: 'bg-orange-50/30' },
-                    { label: '30-45', key: '30 a 45', color: 'border-l-orange-500', bg: 'bg-orange-100/30' },
-                    { label: '45-55', key: '45 a 55', color: 'border-l-rose-500', bg: 'bg-rose-50/30' },
-                    { label: '55-60', key: '55 a 60', color: 'border-l-rose-600', bg: 'bg-rose-100/30' },
-                    { label: '+ 61', key: '+ 61', color: 'border-l-rose-800', bg: 'bg-rose-200/30' }
+                    { label: '10-15', key: '10 a 15', text: 'text-yellow-900', bg: 'bg-yellow-400' },
+                    { label: '15-30', key: '15 a 30', text: 'text-orange-950', bg: 'bg-orange-400' },
+                    { label: '30-45', key: '30 a 45', text: 'text-white', bg: 'bg-orange-600' },
+                    { label: '45-55', key: '45 a 55', text: 'text-white', bg: 'bg-rose-500' },
+                    { label: '55-60', key: '55 a 60', text: 'text-white', bg: 'bg-rose-700' },
+                    { label: '+ 61', key: '+ 61', text: 'text-white', bg: 'bg-rose-900' }
                   ].map(card => (
-                    <div key={card.key} className={`bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border p-3 border-l-4 ${card.color} ${card.bg} flex flex-col justify-between hover:scale-[1.02] transition-all cursor-default`}>
+                    <div key={card.key} className={`${card.bg} rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] p-3 flex flex-col justify-between hover:scale-[1.02] transition-all cursor-default border-none`}>
 
-                      <span className="text-slate-400 text-[9px] font-bold uppercase tracking-wider">{card.label}</span>
+
+                      <span className={`${card.text} opacity-80 text-[9px] font-black uppercase tracking-wider`}>{card.label}</span>
                       <div className="flex items-end justify-between mt-2">
-                        <span className="text-2xl font-black text-slate-800">{fpdMetrics[card.key]}</span>
+                        <span className={`text-2xl font-black ${card.text} italic leading-none`}>{fpdMetrics[card.key]}</span>
+
                       </div>
                     </div>
                   ))}
@@ -2823,18 +2825,20 @@
                     <div className="col-span-1 hidden xl:flex items-center justify-center opacity-30 text-slate-300 font-black text-xl">|</div>
 
                     {[
-                      { label: '10-15', key: '10 a 15', color: 'border-l-yellow-400', bg: 'bg-yellow-50/30' },
-                      { label: '15-30', key: '15 a 30', color: 'border-l-orange-400', bg: 'bg-orange-50/30' },
-                      { label: '30-45', key: '30 a 45', color: 'border-l-orange-500', bg: 'bg-orange-100/30' },
-                      { label: '45-55', key: '45 a 55', color: 'border-l-rose-500', bg: 'bg-rose-50/30' },
-                      { label: '55-60', key: '55 a 60', color: 'border-l-rose-600', bg: 'bg-rose-100/30' },
-                      { label: '+ 61', key: '+ 61', color: 'border-l-rose-800', bg: 'bg-rose-200/30' }
+                      { label: '10-15', key: '10 a 15', text: 'text-yellow-900', bg: 'bg-yellow-400' },
+                      { label: '15-30', key: '15 a 30', text: 'text-orange-950', bg: 'bg-orange-400' },
+                      { label: '30-45', key: '30 a 45', text: 'text-white', bg: 'bg-orange-600' },
+                      { label: '45-55', key: '45 a 55', text: 'text-white', bg: 'bg-rose-500' },
+                      { label: '55-60', key: '55 a 60', text: 'text-white', bg: 'bg-rose-700' },
+                      { label: '+ 61', key: '+ 61', text: 'text-white', bg: 'bg-rose-900' }
                     ].map(card => (
-                      <div key={card.key} className={`bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border p-3 border-l-4 ${card.color} ${card.bg} flex flex-col justify-between hover:scale-[1.02] transition-all cursor-default`}>
+                      <div key={card.key} className={`${card.bg} rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] p-3 flex flex-col justify-between hover:scale-[1.02] transition-all cursor-default border-none`}>
 
-                        <span className="text-slate-400 text-[9px] font-bold uppercase tracking-wider">{card.label}</span>
+
+                        <span className={`${card.text} opacity-80 text-[9px] font-black uppercase tracking-wider`}>{card.label}</span>
                         <div className="flex items-end justify-between mt-2">
-                          <span className="text-2xl font-black text-slate-800">{fpdMetrics[card.key]}</span>
+                          <span className={`text-2xl font-black ${card.text} italic leading-none`}>{fpdMetrics[card.key]}</span>
+
                         </div>
                       </div>
                     ))}
