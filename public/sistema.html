@@ -962,7 +962,8 @@
 
                 if (supabase) {
                   try {
-                    const blob = new Blob([JSON.stringify(parsed)], { type: 'application/json' });
+                    const dataToSend = type === 'eficacia_anterior' ? (await new Promise(r => setEficaciaPreviousSalesData(prev => { r(prev); return prev; }))) : parsed;
+                    const blob = new Blob([JSON.stringify(dataToSend)], { type: 'application/json' });
                     await supabase.storage.from(BUCKET_NAME).upload(`configs/${fileName}.json`, blob, { upsert: true, contentType: 'application/json', cacheControl: '0' });
                   } catch(e) { console.log('Envio bloqueado', e); }
                 }
