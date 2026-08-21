@@ -3044,13 +3044,13 @@
                     {/* Faixas 45-+61 */}
                     <div className="grid grid-cols-3 gap-4">
                       {[
-                        { label: '45-55', key: '45 a 55', text: 'text-rose-500', border: 'border-rose-500' },
-                        { label: '55-60', key: '55 a 60', text: 'text-rose-700', border: 'border-rose-700' },
-                        { label: '+ 61', key: '+ 61', text: 'text-rose-900', border: 'border-rose-900' }
+                        { label: '45-55', key: '45 a 55', text: 'text-rose-500' },
+                        { label: '55-60', key: '55 a 60', text: 'text-rose-700' },
+                        { label: '+ 61', key: '+ 61', text: 'text-rose-900' }
                       ].map(card => (
-                        <div key={card.key} className={`bg-white border-2 ${card.border} rounded-2xl shadow-sm p-4 flex flex-col items-center justify-center h-[130px]`}>
-                          <span className={`${card.text} text-[9px] font-black uppercase tracking-widest`}>{card.label}</span>
-                          <span className={`text-3xl font-black ${card.text} italic mt-2`}>{fpdMetrics[card.key]}</span>
+                        <div key={card.key} className={`bg-white border border-slate-200 rounded-2xl shadow-sm p-4 flex flex-col items-center justify-center h-[130px]`}>
+                          <span className={`${card.text} text-base font-black uppercase tracking-widest`}>{card.label}</span>
+                          <span className={`text-5xl font-black ${card.text} italic mt-2`}>{fpdMetrics[card.key]}</span>
                         </div>
                       ))}
                     </div>
