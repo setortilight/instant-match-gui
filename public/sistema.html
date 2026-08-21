@@ -2930,8 +2930,10 @@
                                   {row.statusPgto || 'PENDENTE'}
                                 </span>
                               </td>
+                              <td className="px-4 py-3 font-medium text-slate-600">{row.motivo || '-'}</td>
                               <td className="px-4 py-3 text-slate-600">{row.vendedor}</td>
                               <td className="px-4 py-3 font-bold text-slate-500">{row.equipe}</td>
+
                               <td className="px-4 py-3 text-center">
                                 <button onClick={() => setSelectedSaleDetails({ ...row, modalType: 'fpd' })} className="bg-slate-900 hover:bg-black text-white px-3 py-1.5 rounded-xl font-bold text-[9px] uppercase transition cursor-pointer flex items-center gap-1 mx-auto">
                                   <Icon name="eye" className="w-3 h-3" /> Detalhes
