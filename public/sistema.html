@@ -906,6 +906,7 @@
                 const head = h.toLowerCase().trim();
                 if (head.includes('vencimento')) idxDataVencimento = idx;
                 if (head.includes('status') && (head.includes('pgto') || head.includes('pagamento'))) idxStatusPgto = idx;
+                if (head.includes('situação') || head.includes('situacao')) if (idxStatusPgto === -1 && type === 'pg') idxStatusPgto = idx;
                 if (head.includes('obs') && (head.includes('pgto') || head.includes('pagamento'))) idxObsPgto = idx;
                 
                 // Forçar índices específicos para FPD Novo se necessário
