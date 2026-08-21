@@ -448,6 +448,8 @@
 
       const [salesData, setSalesData] = useState([]);
       const [previousMonthSalesData, setPreviousMonthSalesData] = useState([]);
+      const [eficaciaSalesData, setEficaciaSalesData] = useState([]);
+      const [eficaciaPreviousSalesData, setEficaciaPreviousSalesData] = useState([]);
       const [churnData, setChurnData] = useState([]);
       const [fpdData, setFpdData] = useState([]);
       const [cancelamentoData, setCancelamentoData] = useState([]);
@@ -602,6 +604,8 @@
             const filesToFetch = [
               { key: 'vendas_atual', setter: setSalesData, localKey: 'lightBiVendasAtual' },
               { key: 'vendas_anterior', setter: setPreviousMonthSalesData, localKey: 'lightBiVendasAnterior' },
+              { key: 'eficacia_atual', setter: setEficaciaSalesData, localKey: 'lightBiEficaciaAtual' },
+              { key: 'eficacia_anterior', setter: setEficaciaPreviousSalesData, localKey: 'lightBiEficaciaAnterior' },
               { key: 'churn', setter: setChurnData, localKey: 'lightBi_churn' },
               { key: 'fpd', setter: setFpdData, localKey: 'lightBi_fpd' },
               { key: 'cancelamento', setter: setCancelamentoData, localKey: 'lightBi_cancelamento' },
@@ -912,13 +916,26 @@
               }
 
               if (parsed.length > 0) {
-                const fileName = type === 'anterior' ? 'vendas_anterior' : 'vendas_atual';
+                const fileNameMap = {
+                  'atual': 'vendas_atual',
+                  'anterior': 'vendas_anterior',
+                  'eficacia_atual': 'eficacia_atual',
+                  'eficacia_anterior': 'eficacia_anterior'
+                };
+                const fileName = fileNameMap[type] || `vendas_${type}`;
+
                 if (type === 'anterior') {
                   setPreviousMonthSalesData(parsed);
                   localStorage.setItem('lightBiVendasAnterior', JSON.stringify(parsed));
-                } else {
+                } else if (type === 'atual') {
                   setSalesData(parsed);
                   localStorage.setItem('lightBiVendasAtual', JSON.stringify(parsed));
+                } else if (type === 'eficacia_atual') {
+                  setEficaciaSalesData(parsed);
+                  localStorage.setItem('lightBiEficaciaAtual', JSON.stringify(parsed));
+                } else if (type === 'eficacia_anterior') {
+                  setEficaciaPreviousSalesData(parsed);
+                  localStorage.setItem('lightBiEficaciaAnterior', JSON.stringify(parsed));
                 }
 
                 if (supabase) {
@@ -958,21 +975,23 @@
       // 5. CÁLCULOS (MEMOS)
       const validSales = useMemo(() => {
         const filtered = salesData.filter(item => !isInvalidClient(item.cliente));
-        // Se estivermos na aba Eficácia e o seletor estiver no modo "Mês Anterior", invertemos as bases
-        if (activeTab === 'eficacia' && eficaciaDataSource === 'anterior') {
-          return previousMonthSalesData.filter(item => !isInvalidClient(item.cliente));
-        }
         return filtered;
-      }, [salesData, previousMonthSalesData, activeTab, eficaciaDataSource]);
+      }, [salesData]);
 
       const validPreviousSales = useMemo(() => {
         const filtered = previousMonthSalesData.filter(item => !isInvalidClient(item.cliente));
-        // Se estivermos na aba Eficácia e o seletor estiver no modo "Mês Anterior", a base comparativa do mês atual não faz sentido para o ranking do passado da mesma forma
-        if (activeTab === 'eficacia' && eficaciaDataSource === 'anterior') {
-          return [];
-        }
         return filtered;
-      }, [previousMonthSalesData, activeTab, eficaciaDataSource]);
+      }, [previousMonthSalesData]);
+
+      const validEficaciaSales = useMemo(() => {
+        const filtered = eficaciaSalesData.filter(item => !isInvalidClient(item.cliente));
+        return filtered;
+      }, [eficaciaSalesData]);
+
+      const validEficaciaPreviousSales = useMemo(() => {
+        const filtered = eficaciaPreviousSalesData.filter(item => !isInvalidClient(item.cliente));
+        return filtered;
+      }, [eficaciaPreviousSalesData]);
 
       const dashboardFilteredSales = useMemo(() => {
         let list = validSales;
@@ -991,9 +1010,10 @@
       // Filtro de período (data da venda) da aba Eficácia
       const eficaciaPeriodoAtivo = !!(eficaciaPeriodoInicio || eficaciaPeriodoFim);
       const getEficaciaBase = (atual, anterior) => {
-        if (!eficaciaPeriodoAtivo) return (eficaciaDataSource === 'atual' || ['vendas', 'equipes', 'vendedores', 'financeiro'].includes(activeTab)) ? atual : anterior;
-        const combinado = [...atual, ...anterior];
-        return combinado.filter(item => {
+        const base = eficaciaDataSource === 'atual' ? validEficaciaSales : validEficaciaPreviousSales;
+        if (!eficaciaPeriodoAtivo) return base;
+        
+        return base.filter(item => {
           const iso = item.dataVendaIso;
           if (!iso) return false;
           if (eficaciaPeriodoInicio && iso < eficaciaPeriodoInicio) return false;
@@ -1967,7 +1987,17 @@
                   <button onClick={() => setEficaciaDataSource('anterior')} className={`px-4 py-2.5 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-widest transition-all cursor-pointer flex items-center gap-2 ${eficaciaDataSource === 'anterior' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200'}`}><Icon name="history" className="w-3.5 h-3.5" /> Mês Anterior</button>
                 </div>
 
-
+                <div className="flex w-full sm:w-auto items-center gap-2">
+                  <input type="file" id="eficacia-upload-atual" className="hidden" accept=".csv, .xlsx, .xls" onChange={(e) => handleCsvUpload(e, 'eficacia_atual')} />
+                  <button onClick={() => document.getElementById('eficacia-upload-atual').click()} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer shadow-md flex items-center gap-2">
+                    <Icon name="upload" className="w-3.5 h-3.5" /> CSV Atual (Eficácia)
+                  </button>
+                  
+                  <input type="file" id="eficacia-upload-anterior" className="hidden" accept=".csv, .xlsx, .xls" onChange={(e) => handleCsvUpload(e, 'eficacia_anterior')} />
+                  <button onClick={() => document.getElementById('eficacia-upload-anterior').click()} className="bg-blue-700 hover:bg-blue-800 text-white px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer shadow-md flex items-center gap-2">
+                    <Icon name="upload" className="w-3.5 h-3.5" /> CSV Anterior (Eficácia)
+                  </button>
+                </div>
               </div>
 
               {eficaciaSubTab === 'dashboard' && (
