@@ -1112,9 +1112,9 @@
                         // Atualiza status e data de agendamento do OSAB no registro consolidado
                         merged[matchIdx] = { 
                           ...merged[matchIdx], 
-                          status: newItem.status,
-                          statusAgendamento: newItem.status,
-                          dataAgendamento: newItem.dataAgendamento 
+                          status: newItem.status || newItem.situação || newItem.status,
+                          statusAgendamento: newItem.status || newItem.situação || newItem.status,
+                          dataAgendamento: newItem.dataAgendamento || newItem.dataAgendamentoOsab
                         };
                       } else {
                         merged.push(newItem);
