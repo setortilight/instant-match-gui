@@ -1811,72 +1811,104 @@
 
           {highlightedSellers.length > 0 && (
             <div className="flex flex-col items-center gap-8 my-8 pt-8 w-full max-w-5xl mx-auto">
-              {/* Pódio: Top 3 */}
-              <div className="flex flex-wrap items-end justify-center gap-4 md:gap-8 w-full">
-                {/* 2º LUGAR (Esquerda no Desktop) */}
-                {highlightedSellers.length >= 2 && (
-                  <div className="flex flex-col items-center transition-all duration-500 animate-in fade-in slide-in-from-bottom-4 order-2 sm:order-1">
-                    <div className="flex items-center gap-1 bg-slate-200 text-slate-700 px-3 py-1 rounded-full text-[9px] font-black mb-2 shadow-sm">
-                      <Icon name="medal" className="w-3.5 h-3.5" /> 2º LUGAR
+              {/* Layout Dinâmico do Pódio */}
+              <div className="flex flex-col items-center w-full gap-8">
+                {/* Linha Principal (Top 3 ou Top 5 dependendo do filtro) */}
+                <div className="flex flex-wrap items-end justify-center gap-4 md:gap-8 w-full">
+                  
+                  {/* 4º LUGAR (Apenas se for Top 5 ou Top 10) */}
+                  {(rankingTopFilter === 'TOP5' || rankingTopFilter === 'TOP10') && highlightedSellers.length >= 4 && (
+                    <div className="flex flex-col items-center transition-all duration-500 animate-in fade-in slide-in-from-bottom-4 order-1 sm:order-1">
+                      <div className="flex items-center gap-1 bg-slate-200 text-slate-700 px-3 py-1 rounded-full text-[9px] font-black mb-2 shadow-sm">
+                        4º LUGAR
+                      </div>
+                      <span className="text-[11px] md:text-[13px] font-black text-slate-700 mb-1 uppercase text-center max-w-[120px] truncate">{highlightedSellers[3].vendedor}</span>
+                      <div className="w-24 md:w-36 h-28 md:h-36 bg-slate-100 rounded-t-[2.5rem] flex flex-col items-center justify-center relative shadow-sm border-t-4 border-slate-300">
+                        <span className="text-2xl md:text-4xl font-black text-slate-500 italic leading-none">{highlightedSellers[3].total}</span>
+                        <span className="text-[9px] font-black text-slate-500 uppercase mt-2">Vendas</span>
+                      </div>
                     </div>
-                    <span className="text-[11px] md:text-[13px] font-black text-slate-700 mb-1 uppercase text-center max-w-[120px] truncate">{highlightedSellers[1].vendedor}</span>
-                    <div className="w-28 md:w-44 h-36 md:h-44 bg-slate-200 rounded-t-[3.5rem] flex flex-col items-center justify-center relative shadow-md border-t-4 border-slate-400">
-                      <span className="text-3xl md:text-5xl font-black text-slate-700 italic leading-none">{highlightedSellers[1].total}</span>
-                      <span className="text-[10px] font-black text-slate-500 uppercase mt-2">Vendas</span>
-                    </div>
-                  </div>
-                )}
+                  )}
 
-                {/* 1º LUGAR (Centro) */}
-                {highlightedSellers.length >= 1 && (
-                  <div className="flex flex-col items-center transition-all duration-500 animate-in fade-in slide-in-from-bottom-4 order-1 sm:order-2 z-10 sm:-mb-6 scale-110 md:scale-100">
-                    <Icon name="crown" className="w-10 h-10 md:w-12 md:h-12 text-amber-400 mb-2 drop-shadow-lg animate-bounce" />
-                    <div className="flex items-center gap-1 bg-amber-400 text-slate-950 px-3 py-1 rounded-full text-[9px] font-black mb-2 shadow-md">
-                      <Icon name="trophy" className="w-3.5 h-3.5" /> 1º LUGAR
+                  {/* 2º LUGAR */}
+                  {highlightedSellers.length >= 2 && (
+                    <div className="flex flex-col items-center transition-all duration-500 animate-in fade-in slide-in-from-bottom-4 order-2 sm:order-2">
+                      <div className="flex items-center gap-1 bg-slate-200 text-slate-700 px-3 py-1 rounded-full text-[9px] font-black mb-2 shadow-sm">
+                        <Icon name="medal" className="w-3.5 h-3.5" /> 2º LUGAR
+                      </div>
+                      <span className="text-[11px] md:text-[13px] font-black text-slate-700 mb-1 uppercase text-center max-w-[120px] truncate">{highlightedSellers[1].vendedor}</span>
+                      <div className="w-28 md:w-44 h-36 md:h-44 bg-slate-200 rounded-t-[3.5rem] flex flex-col items-center justify-center relative shadow-md border-t-4 border-slate-400">
+                        <span className="text-3xl md:text-5xl font-black text-slate-700 italic leading-none">{highlightedSellers[1].total}</span>
+                        <span className="text-[10px] font-black text-slate-500 uppercase mt-2">Vendas</span>
+                      </div>
                     </div>
-                    <span className="text-[11px] md:text-[13px] font-black text-slate-900 mb-1 uppercase text-center max-w-[120px] truncate">{highlightedSellers[0].vendedor}</span>
-                    <div className="w-36 md:w-60 h-48 md:h-64 bg-gradient-to-b from-amber-400 to-amber-500 rounded-t-[3.5rem] flex flex-col items-center justify-center relative shadow-xl border-t-4 border-amber-300">
-                      <span className="text-6xl md:text-8xl font-black text-white italic leading-none drop-shadow-md">{highlightedSellers[0].total}</span>
-                      <span className="text-[10px] font-black text-amber-950 uppercase mt-2">Vendas</span>
-                    </div>
-                  </div>
-                )}
+                  )}
 
-                {/* 3º LUGAR (Direita no Desktop) */}
-                {highlightedSellers.length >= 3 && (
-                  <div className="flex flex-col items-center transition-all duration-500 animate-in fade-in slide-in-from-bottom-4 order-3 sm:order-3">
-                    <div className="flex items-center gap-1 bg-amber-800/20 text-amber-900 px-3 py-1 rounded-full text-[9px] font-black mb-2 shadow-sm">
-                      <Icon name="award" className="w-3.5 h-3.5" /> 3º LUGAR
+                  {/* 1º LUGAR (Centro) */}
+                  {highlightedSellers.length >= 1 && (
+                    <div className="flex flex-col items-center transition-all duration-500 animate-in fade-in slide-in-from-bottom-4 order-3 sm:order-3 z-10 sm:-mb-6 scale-110 md:scale-100">
+                      <Icon name="crown" className="w-10 h-10 md:w-12 md:h-12 text-amber-400 mb-2 drop-shadow-lg animate-bounce" />
+                      <div className="flex items-center gap-1 bg-amber-400 text-slate-950 px-3 py-1 rounded-full text-[9px] font-black mb-2 shadow-md">
+                        <Icon name="trophy" className="w-3.5 h-3.5" /> 1º LUGAR
+                      </div>
+                      <span className="text-[11px] md:text-[13px] font-black text-slate-900 mb-1 uppercase text-center max-w-[120px] truncate">{highlightedSellers[0].vendedor}</span>
+                      <div className="w-36 md:w-60 h-48 md:h-64 bg-gradient-to-b from-amber-400 to-amber-500 rounded-t-[3.5rem] flex flex-col items-center justify-center relative shadow-xl border-t-4 border-amber-300">
+                        <span className="text-6xl md:text-8xl font-black text-white italic leading-none drop-shadow-md">{highlightedSellers[0].total}</span>
+                        <span className="text-[10px] font-black text-amber-950 uppercase mt-2">Vendas</span>
+                      </div>
                     </div>
-                    <span className="text-[11px] md:text-[13px] font-black text-slate-700 mb-1 uppercase text-center max-w-[120px] truncate">{highlightedSellers[2].vendedor}</span>
-                    <div className="w-24 md:w-44 h-32 md:h-40 bg-amber-800/10 rounded-t-[3.5rem] flex flex-col items-center justify-center relative shadow-md border-t-4 border-amber-700">
-                      <span className="text-3xl md:text-5xl font-black text-amber-900 italic leading-none">{highlightedSellers[2].total}</span>
-                      <span className="text-[10px] font-black text-amber-800/70 uppercase mt-2">Vendas</span>
+                  )}
+
+                  {/* 3º LUGAR */}
+                  {highlightedSellers.length >= 3 && (
+                    <div className="flex flex-col items-center transition-all duration-500 animate-in fade-in slide-in-from-bottom-4 order-4 sm:order-4">
+                      <div className="flex items-center gap-1 bg-amber-800/20 text-amber-900 px-3 py-1 rounded-full text-[9px] font-black mb-2 shadow-sm">
+                        <Icon name="award" className="w-3.5 h-3.5" /> 3º LUGAR
+                      </div>
+                      <span className="text-[11px] md:text-[13px] font-black text-slate-700 mb-1 uppercase text-center max-w-[120px] truncate">{highlightedSellers[2].vendedor}</span>
+                      <div className="w-24 md:w-44 h-32 md:h-40 bg-amber-800/10 rounded-t-[3.5rem] flex flex-col items-center justify-center relative shadow-md border-t-4 border-amber-700">
+                        <span className="text-3xl md:text-5xl font-black text-amber-900 italic leading-none">{highlightedSellers[2].total}</span>
+                        <span className="text-[10px] font-black text-amber-800/70 uppercase mt-2">Vendas</span>
+                      </div>
                     </div>
+                  )}
+
+                  {/* 5º LUGAR (Apenas se for Top 5 ou Top 10) */}
+                  {(rankingTopFilter === 'TOP5' || rankingTopFilter === 'TOP10') && highlightedSellers.length >= 5 && (
+                    <div className="flex flex-col items-center transition-all duration-500 animate-in fade-in slide-in-from-bottom-4 order-5 sm:order-5">
+                      <div className="flex items-center gap-1 bg-slate-200 text-slate-700 px-3 py-1 rounded-full text-[9px] font-black mb-2 shadow-sm">
+                        5º LUGAR
+                      </div>
+                      <span className="text-[11px] md:text-[13px] font-black text-slate-700 mb-1 uppercase text-center max-w-[120px] truncate">{highlightedSellers[4].vendedor}</span>
+                      <div className="w-24 md:w-36 h-28 md:h-36 bg-slate-100 rounded-t-[2.5rem] flex flex-col items-center justify-center relative shadow-sm border-t-4 border-slate-300">
+                        <span className="text-2xl md:text-4xl font-black text-slate-500 italic leading-none">{highlightedSellers[4].total}</span>
+                        <span className="text-[9px] font-black text-slate-500 uppercase mt-2">Vendas</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Linha Secundária (6º ao 10º LUGAR) - Apenas se for Top 10 */}
+                {rankingTopFilter === 'TOP10' && highlightedSellers.length > 5 && (
+                  <div className="flex flex-wrap justify-center gap-4 md:gap-6 w-full mt-4">
+                    {highlightedSellers.slice(5).map((seller, idx) => {
+                      const rank = idx + 6;
+                      return (
+                        <div key={seller.vendedor} className="flex flex-col items-center transition-all duration-500 animate-in fade-in slide-in-from-bottom-4">
+                          <div className="flex items-center gap-1 bg-slate-200 text-slate-700 px-3 py-1 rounded-full text-[9px] font-black mb-2 shadow-sm">
+                            {rank}º LUGAR
+                          </div>
+                          <span className="text-[10px] md:text-[12px] font-black text-slate-700 mb-1 uppercase text-center max-w-[100px] truncate">{seller.vendedor}</span>
+                          <div className="w-24 md:w-36 h-28 md:h-36 bg-slate-100 rounded-t-[2.5rem] flex flex-col items-center justify-center relative shadow-sm border-t-4 border-slate-300">
+                            <span className="text-2xl md:text-4xl font-black text-slate-500 italic leading-none">{seller.total}</span>
+                            <span className="text-[9px] font-black text-slate-500 uppercase mt-2">Vendas</span>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
-
-              {/* Outros Lugares (4º ao 10º) - Exibidos abaixo em uma grade */}
-              {highlightedSellers.length > 3 && (
-                <div className="flex flex-wrap justify-center gap-4 md:gap-6 w-full mt-4">
-                  {highlightedSellers.slice(3).map((seller, idx) => {
-                    const rank = idx + 4;
-                    return (
-                      <div key={seller.vendedor} className="flex flex-col items-center transition-all duration-500 animate-in fade-in slide-in-from-bottom-4">
-                        <div className="flex items-center gap-1 bg-slate-200 text-slate-700 px-3 py-1 rounded-full text-[9px] font-black mb-2 shadow-sm">
-                          {rank}º LUGAR
-                        </div>
-                        <span className="text-[10px] md:text-[12px] font-black text-slate-700 mb-1 uppercase text-center max-w-[100px] truncate">{seller.vendedor}</span>
-                        <div className="w-24 md:w-36 h-28 md:h-36 bg-slate-100 rounded-t-[2.5rem] flex flex-col items-center justify-center relative shadow-sm border-t-4 border-slate-300">
-                          <span className="text-2xl md:text-4xl font-black text-slate-500 italic leading-none">{seller.total}</span>
-                          <span className="text-[9px] font-black text-slate-500 uppercase mt-2">Vendas</span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
             </div>
           )}
 
