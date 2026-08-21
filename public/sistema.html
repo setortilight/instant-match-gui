@@ -1610,12 +1610,12 @@
       // CÁLCULOS FPD
       const fpdFilteredData = useMemo(() => {
         return validFpdSales.filter(item => {
-          // Filtro de Mês (Data de Vencimento ou Data Venda)
-          if (fpdSelectedMonth !== 'TODOS') {
+          // Filtro de Mês (Data de Vencimento ou Data Venda) - Multi-select
+          if (!fpdSelectedMonths.includes('TODOS')) {
             const dateStr = item.dataVencimentoIso || item.dataVendaIso;
             if (dateStr) {
-              const m = parseInt(dateStr.split('-')[1], 10);
-              if (m !== Number(fpdSelectedMonth)) return false;
+              const m = dateStr.split('-')[1]; // Retorna string '01', '02', etc.
+              if (!fpdSelectedMonths.includes(m)) return false;
             } else {
               return false;
             }
@@ -1623,7 +1623,7 @@
           if (fpdFilterEquipe !== 'TODAS' && item.equipe !== fpdFilterEquipe) return false;
           if (fpdFilterStatusPgto !== 'TODOS' && item.statusPgto !== fpdFilterStatusPgto) return false;
           
-          // Filtro de Data Personalizado (Período)
+          // Filtro de Data de Vencimento (Período Personalizado)
           if (fpdFilterDateStart || fpdFilterDateEnd) {
             const dateStr = item.dataVencimentoIso || item.dataVendaIso;
             if (!dateStr) return false;
@@ -1647,7 +1647,8 @@
           }
           return true;
         });
-      }, [validFpdSales, fpdSelectedMonth, fpdFilterEquipe, fpdFilterStatusPgto, fpdFilterFaixa, fpdFilterVendedor, fpdSearchText, fpdFilterDateStart, fpdFilterDateEnd]);
+      }, [validFpdSales, fpdSelectedMonths, fpdFilterEquipe, fpdFilterStatusPgto, fpdFilterFaixa, fpdFilterVendedor, fpdSearchText, fpdFilterDateStart, fpdFilterDateEnd]);
+
 
       const calculateFpdFaixa = (dataVencIso) => {
         if (!dataVencIso) return 'N/A';
