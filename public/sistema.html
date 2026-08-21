@@ -802,11 +802,13 @@
                 if (h === 'os' || h === 'ordem de serviço') if (idxOs === -1) idxOs = idx;
                 if (h.includes('turno')) if (idxTurno === -1) idxTurno = idx;
                 if (h.includes('telefone') || h === 'celular' || idx === 4) if (idxTelefone === -1) idxTelefone = idx;
-                if (h.includes('obs endereço') || h.includes('obs endereco') || idx === 8) if (idxObsEndereco === -1) idxObsEndereco = idx;
-                if (h.includes('obs da venda') || h.includes('observação') || idx === 44) if (idxObsVenda === -1) idxObsVenda = idx;
+                if (h.includes('obs endereço') || h.includes('obs endereco') || (idx === 8 && !h.includes('vendedor'))) if (idxObsEndereco === -1) idxObsEndereco = idx;
+                if (h.includes('obs da venda') || h.includes('observação') || idx === 37) if (idxObsVenda === -1) idxObsVenda = idx;
                 if (h.includes('agendamento') && (h.includes('data') || h.includes('dt'))) if (idxDataAgendamento === -1) idxDataAgendamento = idx;
                 if (h.includes('status') && h.includes('agendamento')) if (idxStatusAgendamento === -1) idxStatusAgendamento = idx;
-                if (h.includes('complemento agendamento instalação') || idx === 37) if (idxComplementoInstalacao === -1) idxComplementoInstalacao = idx;
+                if (h.includes('complemento agendamento instalação') || idx === 37) {
+                  if (idxComplementoInstalacao === -1) idxComplementoInstalacao = idx;
+                }
               });
 
               if (idxTelefone === -1) idxTelefone = 4;
@@ -818,7 +820,7 @@
               if (idxStatusAgendamento === -1) idxStatusAgendamento = 36;
               if (idxTurno === -1) idxTurno = 36;
               if (idxStatus === -1) idxStatus = 38;
-              if (idxObsVenda === -1) idxObsVenda = 44;
+              if (idxObsVenda === -1) idxObsVenda = 37;
 
               const parsed = [];
               for (let i = headerIdx + 1; i < rows.length; i++) {
@@ -2581,7 +2583,7 @@
                   </div>
                 </div>
                 <div className="bg-emerald-50/60 p-4 rounded-2xl border border-emerald-100">
-                  <span className="text-[9px] font-black uppercase text-emerald-700">OBS DA INSTALAÇÃO</span>
+                  <span className="text-[9px] font-black uppercase text-emerald-700">OBS DA VENDA</span>
                   <p className="font-medium text-slate-700 text-xs mt-1 leading-relaxed">{selectedSaleDetails.obsInstalacao || selectedSaleDetails.obsVenda || 'Nenhuma observação registada.'}</p>
                 </div>
                 <button onClick={() => setSelectedSaleDetails(null)} className="w-full bg-slate-900 hover:bg-slate-800 text-white font-black uppercase text-xs py-3.5 rounded-2xl shadow cursor-pointer">Fechar</button>
