@@ -25,9 +25,6 @@ export const Route = createFileRoute("/")({
 function Index() {
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden">
-      <div className="bg-yellow-100 border-b border-yellow-200 p-2 text-center text-sm font-medium text-yellow-800">
-        AGORA IREMOS IMPLEMENTAR TRES BOTOES DE CARREGAMENTO DE ARQUIVOS QUE TERÃO CRUZAMENTO DE DADOS DE AGUMAS INFORMAÇÕES ENTRE OS TRES BOTOES PARA TER O RESULTADO NOS GRAFICOS E CARDS: BOTAO OSAB, BOTAO PG, BOTAO CSV
-      </div>
       <iframe
         src="/sistema.html"
         title="Light BI Telecom - Gestão de Vendas"
