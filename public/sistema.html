@@ -1099,9 +1099,51 @@
                     return merged;
                   });
                 } else if (type === 'osab') {
+                  setFpdSalesData(prev => {
+                    const merged = [...prev];
+                    parsed.forEach(newItem => {
+                      const matchIdx = merged.findIndex(old => 
+                        (newItem.os && String(old.os) === String(newItem.os)) ||
+                        (newItem.cpf && String(old.cpf) === String(newItem.cpf)) ||
+                        (old.cliente === newItem.cliente && old.dataVendaIso === newItem.dataVendaIso)
+                      );
+                      if (matchIdx > -1) {
+                        // Atualiza status e data de agendamento do OSAB no registro consolidado
+                        merged[matchIdx] = { 
+                          ...merged[matchIdx], 
+                          status: newItem.status,
+                          statusAgendamento: newItem.status,
+                          dataAgendamento: newItem.dataAgendamento 
+                        };
+                      } else {
+                        merged.push(newItem);
+                      }
+                    });
+                    localStorage.setItem('lightBiFpdAtual', JSON.stringify(merged));
+                    return merged;
+                  });
                   setOsabData(parsed);
                   localStorage.setItem('lightBiOsabData', JSON.stringify(parsed));
                 } else if (type === 'pg') {
+                  setFpdSalesData(prev => {
+                    const merged = [...prev];
+                    parsed.forEach(newItem => {
+                      const matchIdx = merged.findIndex(old => 
+                        (newItem.os && String(old.os) === String(newItem.os)) ||
+                        (newItem.cpf && String(old.cpf) === String(newItem.cpf))
+                      );
+                      if (matchIdx > -1) {
+                        // Atualiza status de pagamento
+                        merged[matchIdx] = { 
+                          ...merged[matchIdx], 
+                          statusPgto: newItem.statusPgto || 'PAGO',
+                          obsPgto: newItem.obsPgto || 'ATUALIZADO VIA PG'
+                        };
+                      }
+                    });
+                    localStorage.setItem('lightBiFpdAtual', JSON.stringify(merged));
+                    return merged;
+                  });
                   setPgData(parsed);
                   localStorage.setItem('lightBiPgData', JSON.stringify(parsed));
                 } else if (type === 'csv_cancel') {
