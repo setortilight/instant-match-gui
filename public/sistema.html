@@ -524,6 +524,9 @@
       const [fpdCurrentPage, setFpdCurrentPage] = useState(1);
       const [cancelamentoData, setCancelamentoData] = useState([]);
       const [qualidadeData, setQualidadeData] = useState([]);
+      const [osabData, setOsabData] = useState([]);
+      const [pgData, setPgData] = useState([]);
+      const [csvCancelData, setCsvCancelData] = useState([]);
 
       const [searchTerm, setSearchTerm] = useState('');
       const [selectedTeamFilter, setSelectedTeamFilter] = useState('TODAS');
@@ -676,8 +679,11 @@
               { key: 'vendas_atual', setter: setSalesData, localKey: 'lightBiVendasAtual' },
               { key: 'vendas_anterior', setter: setPreviousMonthSalesData, localKey: 'lightBiVendasAnterior' },
               { key: 'eficacia_atual', setter: setEficaciaSalesData, localKey: 'lightBiEficaciaAtual' },
-              { key: 'eficacia_anterior', setter: setEficaciaPreviousSalesData, localKey: 'lightBiEficaciaAnterior' },
-              { key: 'fpd_atual', setter: setFpdSalesData, localKey: 'lightBiFpdAtual' },
+               { key: 'eficacia_anterior', setter: setEficaciaPreviousSalesData, localKey: 'lightBiEficaciaAnterior' },
+               { key: 'fpd_atual', setter: setFpdSalesData, localKey: 'lightBiFpdAtual' },
+               { key: 'osab_data', setter: setOsabData, localKey: 'lightBiOsabData' },
+               { key: 'pg_data', setter: setPgData, localKey: 'lightBiPgData' },
+               { key: 'csv_cancel_data', setter: setCsvCancelData, localKey: 'lightBiCsvCancelData' },
               { key: 'churn', setter: setChurnData, localKey: 'lightBi_churn' },
               { key: 'fpd', setter: setFpdData, localKey: 'lightBi_fpd' },
               { key: 'cancelamento', setter: setCancelamentoData, localKey: 'lightBi_cancelamento' },
@@ -1030,7 +1036,10 @@
                   'anterior': 'vendas_anterior',
                   'eficacia_atual': 'eficacia_atual',
                   'eficacia_anterior': 'eficacia_anterior',
-                  'fpd_atual': 'fpd_atual'
+                  'fpd_atual': 'fpd_atual',
+                  'osab': 'osab_data',
+                  'pg': 'pg_data',
+                  'csv_cancel': 'csv_cancel_data'
                 };
                 const fileName = fileNameMap[type] || `vendas_${type}`;
 
@@ -1081,6 +1090,15 @@
                     localStorage.setItem('lightBiFpdAtual', JSON.stringify(merged));
                     return merged;
                   });
+                } else if (type === 'osab') {
+                  setOsabData(parsed);
+                  localStorage.setItem('lightBiOsabData', JSON.stringify(parsed));
+                } else if (type === 'pg') {
+                  setPgData(parsed);
+                  localStorage.setItem('lightBiPgData', JSON.stringify(parsed));
+                } else if (type === 'csv_cancel') {
+                  setCsvCancelData(parsed);
+                  localStorage.setItem('lightBiCsvCancelData', JSON.stringify(parsed));
                 }
 
                 if (supabase) {
@@ -2554,10 +2572,23 @@
             {fpdSubTab === 'dashboard' ? (
               <>
                 {/* Visualização de Gráfico Histórico */}
-                <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm h-[300px] flex flex-col">
-                  <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-400 italic mb-4">Volume Histórico de Registros FPD</h3>
-                  <div className="flex-1 min-h-0 relative">
-                    <FpdChart timelineData={fpdTimelineData} />
+                <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col items-center justify-center py-10">
+                  <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-400 italic mb-6">Controle de Arquivos (Setor Cancelamento)</h3>
+                  <div className="flex flex-wrap items-center justify-center gap-4 w-full">
+                    <input type="file" id="inputOsab" accept=".csv,.xlsx,.xls" className="hidden" onChange={(e) => handleCsvUpload(e, 'osab')} />
+                    <button onClick={() => document.getElementById('inputOsab').click()} className="bg-amber-500 hover:bg-amber-600 text-white font-black text-[11px] uppercase tracking-widest px-8 py-4 rounded-[1.5rem] shadow-lg flex items-center gap-3 transition-all hover:scale-105 cursor-pointer">
+                      <Icon name="file-text" className="w-5 h-5" /> <span>BOTAO OSAB</span>
+                    </button>
+                    
+                    <input type="file" id="inputPg" accept=".csv,.xlsx,.xls" className="hidden" onChange={(e) => handleCsvUpload(e, 'pg')} />
+                    <button onClick={() => document.getElementById('inputPg').click()} className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[11px] uppercase tracking-widest px-8 py-4 rounded-[1.5rem] shadow-lg flex items-center gap-3 transition-all hover:scale-105 cursor-pointer">
+                      <Icon name="file-check" className="w-5 h-5" /> <span>BOTAO PG</span>
+                    </button>
+
+                    <input type="file" id="inputCsvCancel" accept=".csv,.xlsx,.xls" className="hidden" onChange={(e) => handleCsvUpload(e, 'csv_cancel')} />
+                    <button onClick={() => document.getElementById('inputCsvCancel').click()} className="bg-slate-800 hover:bg-slate-900 text-white font-black text-[11px] uppercase tracking-widest px-8 py-4 rounded-[1.5rem] shadow-lg flex items-center gap-3 transition-all hover:scale-105 cursor-pointer">
+                      <Icon name="file-up" className="w-5 h-5" /> <span>BOTAO CSV</span>
+                    </button>
                   </div>
                 </div>
 
