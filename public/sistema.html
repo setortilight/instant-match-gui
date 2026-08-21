@@ -956,8 +956,23 @@
       };
 
       // 5. CÁLCULOS (MEMOS)
-      const validSales = useMemo(() => salesData.filter(item => !isInvalidClient(item.cliente)), [salesData]);
-      const validPreviousSales = useMemo(() => previousMonthSalesData.filter(item => !isInvalidClient(item.cliente)), [previousMonthSalesData]);
+      const validSales = useMemo(() => {
+        const filtered = salesData.filter(item => !isInvalidClient(item.cliente));
+        // Se estivermos na aba Eficácia e o seletor estiver no modo "Mês Anterior", invertemos as bases
+        if (activeTab === 'eficacia' && eficaciaDataSource === 'anterior') {
+          return previousMonthSalesData.filter(item => !isInvalidClient(item.cliente));
+        }
+        return filtered;
+      }, [salesData, previousMonthSalesData, activeTab, eficaciaDataSource]);
+
+      const validPreviousSales = useMemo(() => {
+        const filtered = previousMonthSalesData.filter(item => !isInvalidClient(item.cliente));
+        // Se estivermos na aba Eficácia e o seletor estiver no modo "Mês Anterior", a base comparativa do mês atual não faz sentido para o ranking do passado da mesma forma
+        if (activeTab === 'eficacia' && eficaciaDataSource === 'anterior') {
+          return [];
+        }
+        return filtered;
+      }, [previousMonthSalesData, activeTab, eficaciaDataSource]);
 
       const dashboardFilteredSales = useMemo(() => {
         let list = validSales;
@@ -976,7 +991,7 @@
       // Filtro de período (data da venda) da aba Eficácia
       const eficaciaPeriodoAtivo = !!(eficaciaPeriodoInicio || eficaciaPeriodoFim);
       const getEficaciaBase = (atual, anterior) => {
-        if (!eficaciaPeriodoAtivo) return eficaciaDataSource === 'atual' ? atual : anterior;
+        if (!eficaciaPeriodoAtivo) return (eficaciaDataSource === 'atual' || ['vendas', 'equipes', 'vendedores', 'financeiro'].includes(activeTab)) ? atual : anterior;
         const combinado = [...atual, ...anterior];
         return combinado.filter(item => {
           const iso = item.dataVendaIso;
