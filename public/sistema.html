@@ -2596,40 +2596,40 @@
                 {/* Grid de 11 Cards no Dashboard */}
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-11 gap-4">
                   <div className="bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border p-4 border-l-4 border-l-slate-800 flex flex-col justify-between hover:scale-[1.02] transition-all cursor-default">
-                    <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">Total</span>
-                    <div className="flex items-end justify-between mt-2">
-                      <span className="text-2xl font-black text-slate-800">{fpdMetrics.total}</span>
+                    <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider text-center">Total</span>
+                    <div className="flex items-center justify-center mt-2">
+                      <span className="text-xl font-black text-slate-800">{fpdMetrics.total}</span>
                     </div>
                   </div>
                   <div className="bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border p-4 border-l-4 border-l-emerald-500 flex flex-col justify-between hover:scale-[1.02] transition-all cursor-default">
-                    <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">Pago</span>
-                    <div className="flex items-end justify-between mt-2">
-                      <span className="text-2xl font-black text-slate-800">{fpdMetrics.pago}</span>
-                      <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md">{fpdMetrics.total > 0 ? ((fpdMetrics.pago / fpdMetrics.total) * 100).toFixed(1) : '0.0'}%</span>
+                    <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider text-center">Pago</span>
+                    <div className="flex flex-col items-center mt-2">
+                      <span className="text-xl font-black text-slate-800">{fpdMetrics.pago}</span>
+                      <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md mt-1">{fpdMetrics.total > 0 ? ((fpdMetrics.pago / fpdMetrics.total) * 100).toFixed(0) : '0'}%</span>
                     </div>
                   </div>
                   <div className="bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border p-4 border-l-4 border-l-rose-500 flex flex-col justify-between hover:scale-[1.02] transition-all cursor-default">
-                    <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">Não Pago</span>
-                    <div className="flex items-end justify-between mt-2">
-                      <span className="text-2xl font-black text-slate-800">{fpdMetrics.naoPago}</span>
-                      <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-1 rounded-md">{fpdMetrics.total > 0 ? ((fpdMetrics.naoPago / fpdMetrics.total) * 100).toFixed(1) : '0.0'}%</span>
+                    <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider text-center">N. Pago</span>
+                    <div className="flex flex-col items-center mt-2">
+                      <span className="text-xl font-black text-slate-800">{fpdMetrics.naoPago}</span>
+                      <span className="text-[9px] font-bold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded-md mt-1">{fpdMetrics.total > 0 ? ((fpdMetrics.naoPago / fpdMetrics.total) * 100).toFixed(0) : '0'}%</span>
                     </div>
                   </div>
-                  
+
                   <div className="col-span-1 hidden xl:flex items-center justify-center opacity-30 text-slate-300 font-black text-2xl">|</div>
 
                   {[
-                    { label: '10 a 15', key: '10 a 15', color: 'border-l-slate-400' },
-                    { label: '15 a 30', key: '15 a 30', color: 'border-l-slate-400' },
-                    { label: '30 a 45', key: '30 a 45', color: 'border-l-slate-400' },
-                    { label: '45 a 55', key: '45 a 55', color: 'border-l-slate-400' },
-                    { label: '55 a 60', key: '55 a 60', color: 'border-l-slate-400' },
+                    { label: '10-15', key: '10 a 15', color: 'border-l-slate-400' },
+                    { label: '15-30', key: '15 a 30', color: 'border-l-slate-400' },
+                    { label: '30-45', key: '30 a 45', color: 'border-l-slate-400' },
+                    { label: '45-55', key: '45 a 55', color: 'border-l-slate-400' },
+                    { label: '55-60', key: '55 a 60', color: 'border-l-slate-400' },
                     { label: '+ 61', key: '+ 61', color: 'border-l-rose-600' }
                   ].map(card => (
-                    <div key={card.key} className={`bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border p-4 border-l-4 ${card.color} flex flex-col justify-between hover:scale-[1.02] transition-all cursor-default`}>
-                      <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider">{card.label} DIAS</span>
-                      <div className="flex items-end justify-between mt-2">
-                        <span className="text-2xl font-black text-slate-800">{fpdMetrics[card.key]}</span>
+                    <div key={card.key} className={`bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border p-3 border-l-4 ${card.color} flex flex-col justify-between hover:scale-[1.02] transition-all cursor-default`}>
+                      <span className="text-slate-400 text-[9px] font-bold uppercase tracking-wider text-center">{card.label}</span>
+                      <div className="flex items-center justify-center mt-2">
+                        <span className="text-lg font-black text-slate-800">{fpdMetrics[card.key]}</span>
                       </div>
                     </div>
                   ))}
