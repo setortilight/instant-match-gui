@@ -2786,9 +2786,10 @@
                     <div key={card.key} className={`${card.bg} rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] p-3 flex flex-col justify-between hover:scale-[1.02] transition-all cursor-default border-none`}>
 
 
-                      <span className="text-slate-400 text-[9px] font-bold uppercase tracking-wider">{card.label}</span>
+                      <span className={`${card.text} opacity-80 text-[9px] font-black uppercase tracking-wider`}>{card.label}</span>
                       <div className="flex items-end justify-between mt-2">
-                        <span className="text-2xl font-black text-slate-800">{fpdMetrics[card.key]}</span>
+                        <span className={`text-2xl font-black ${card.text} italic leading-none`}>{fpdMetrics[card.key]}</span>
+
                       </div>
                     </div>
                   ))}
