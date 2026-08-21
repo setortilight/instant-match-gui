@@ -2673,9 +2673,9 @@
                       { label: '+ 61', key: '+ 61', color: 'border-l-rose-600' }
                     ].map(card => (
                       <div key={card.key} className={`bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border p-3 border-l-4 ${card.color} flex flex-col justify-between hover:scale-[1.02] transition-all cursor-default`}>
-                        <span className="text-slate-400 text-[9px] font-bold uppercase tracking-wider text-center">{card.label}</span>
-                        <div className="flex items-center justify-center mt-2">
-                          <span className="text-lg font-black text-slate-800">{fpdMetrics[card.key]}</span>
+                        <span className="text-slate-400 text-[9px] font-bold uppercase tracking-wider">{card.label}</span>
+                        <div className="flex items-end justify-between mt-2">
+                          <span className="text-2xl font-black text-slate-800">{fpdMetrics[card.key]}</span>
                         </div>
                       </div>
                     ))}
