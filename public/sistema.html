@@ -868,7 +868,7 @@
               let idxCliente = -1, idxVendedor = -1, idxEquipe = -1, idxPlano = -1, idxValor = -1, idxStatus = -1, idxDataVenda = -1;
               let idxCpf = -1, idxCidade = -1, idxOs = -1, idxTurno = -1, idxTelefone = -1, idxObs = -1, idxDataAgendamento = -1, idxStatusAgendamento = -1;
               let idxObsEndereco = -1, idxObsVenda = -1, idxComplementoInstalacao = -1;
-              let idxPedido = -1, idxSituacao = -1, idxDataAgendamentoOsab = -1; // Novo para OSAB
+              let idxPedido = -1, idxSituacao = -1, idxDataAgendamentoOsab = -1, idxMotivoManual = -1; // Novo para OSAB
 
               headers.forEach((h, idx) => {
                 if (h.includes('cliente') || h.includes('nome')) if (idxCliente === -1) idxCliente = idx;
@@ -901,7 +901,7 @@
               if (idxEquipe === -1) idxEquipe = 29;
               if (idxStatusAgendamento === -1) idxStatusAgendamento = 36;
               if (idxTurno === -1) idxTurno = 36;
-              let idxDataVencimento = -1, idxStatusPgto = -1, idxObsPgto = -1;
+              let idxDataVencimento = -1, idxStatusPgto = -1, idxObsPgto = -1, idxMotivo = -1;
               
               headers.forEach((h, idx) => {
                 const head = h.toLowerCase().trim();
@@ -909,6 +909,8 @@
                 if (head.includes('status') && (head.includes('pgto') || head.includes('pagamento'))) idxStatusPgto = idx;
                 if (head.includes('situação') || head.includes('situacao')) if (idxStatusPgto === -1 && type === 'pg') idxStatusPgto = idx;
                 if (head.includes('obs') && (head.includes('pgto') || head.includes('pagamento'))) idxObsPgto = idx;
+                if (head.includes('motivo')) idxMotivo = idx;
+
                 
                 // Forçar índices específicos para FPD Novo se necessário
                 if (type === 'fpd_atual' || type === 'osab') {
@@ -925,6 +927,8 @@
                   if (head.includes('cidade')) idxCidade = idx;
                   if (head.includes('situação') || head.includes('situacao')) idxStatus = idx;
                   if (head.includes('obs endereço')) idxObsEndereco = idx;
+                  if (head.includes('motivo')) idxMotivoManual = idx;
+
                 }
               });
 
@@ -1035,7 +1039,9 @@
                   dataVencimentoIso: dataVencIso,
                   dataVencimentoFormatada: dataVencFormatada,
                   statusPgto: idxStatusPgto !== -1 ? String(cols[idxStatusPgto]).toUpperCase().trim() : 'PENDENTE',
-                  obsPgto: idxObsPgto !== -1 ? String(cols[idxObsPgto]).trim() : ''
+                  obsPgto: idxObsPgto !== -1 ? String(cols[idxObsPgto]).trim() : '',
+                  motivo: idxMotivo !== -1 && cols[idxMotivo] ? String(cols[idxMotivo]).trim() : (idxMotivoManual !== -1 && cols[idxMotivoManual] ? String(cols[idxMotivoManual]).trim() : '')
+
                 });
               }
 
@@ -2904,9 +2910,11 @@
                             <th className="px-4 py-3">Data Inst.</th>
                             <th className="px-4 py-3">Data Venc.</th>
                             <th className="px-4 py-3">Faixa</th>
-                            <th className="px-4 py-3 text-center">Status Pgto</th>
-                            <th className="px-4 py-3">Vendedor</th>
-                            <th className="px-4 py-3">Equipe</th>
+                             <th className="px-4 py-3 text-center">Status Pgto</th>
+                             <th className="px-4 py-3">Motivo</th>
+                             <th className="px-4 py-3">Vendedor</th>
+                             <th className="px-4 py-3">Equipe</th>
+
                             <th className="px-4 py-3 text-center">Ações</th>
                           </tr>
                         </thead>
@@ -2924,8 +2932,10 @@
                                   {row.statusPgto || 'PENDENTE'}
                                 </span>
                               </td>
+                              <td className="px-4 py-3 font-medium text-slate-600">{row.motivo || '-'}</td>
                               <td className="px-4 py-3 text-slate-600">{row.vendedor}</td>
                               <td className="px-4 py-3 font-bold text-slate-500">{row.equipe}</td>
+
                               <td className="px-4 py-3 text-center">
                                 <button onClick={() => setSelectedSaleDetails({ ...row, modalType: 'fpd' })} className="bg-slate-900 hover:bg-black text-white px-3 py-1.5 rounded-xl font-bold text-[9px] uppercase transition cursor-pointer flex items-center gap-1 mx-auto">
                                   <Icon name="eye" className="w-3 h-3" /> Detalhes
