@@ -939,8 +939,30 @@
                   setEficaciaSalesData(parsed);
                   localStorage.setItem('lightBiEficaciaAtual', JSON.stringify(parsed));
                 } else if (type === 'eficacia_anterior') {
-                  setEficaciaPreviousSalesData(parsed);
-                  localStorage.setItem('lightBiEficaciaAnterior', JSON.stringify(parsed));
+                  setEficaciaPreviousSalesData(prev => {
+                    const merged = [...prev];
+                    parsed.forEach(newItem => {
+                      const matchIdx = merged.findIndex(old => 
+                        (old.cliente === newItem.cliente && old.dataVendaIso === newItem.dataVendaIso) ||
+                        (newItem.os && old.os === newItem.os) ||
+                        (newItem.cpf && old.cpf === newItem.cpf)
+                      );
+                      
+                      if (matchIdx > -1) {
+                        const oldItem = merged[matchIdx];
+                        const oldStatus = oldItem.statusAgendamento || oldItem.status;
+                        const newStatus = newItem.statusAgendamento || newItem.status;
+                        
+                        if (oldStatus !== newStatus) {
+                          merged[matchIdx] = { ...oldItem, ...newItem };
+                        }
+                      } else {
+                        merged.push(newItem);
+                      }
+                    });
+                    localStorage.setItem('lightBiEficaciaAnterior', JSON.stringify(merged));
+                    return merged;
+                  });
                 }
 
                 if (supabase) {
@@ -1995,7 +2017,7 @@
                 
                 <div className="flex w-full sm:w-auto items-center gap-2 bg-slate-100 p-1 rounded-full shadow-inner justify-center">
                   <button onClick={() => setEficaciaDataSource('atual')} className={`px-4 py-2.5 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-widest transition-all cursor-pointer flex items-center gap-2 ${eficaciaDataSource === 'atual' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200'}`}><Icon name="calendar" className="w-3.5 h-3.5" /> Mês Atual</button>
-                  <button onClick={() => setEficaciaDataSource('anterior')} className={`px-4 py-2.5 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-widest transition-all cursor-pointer flex items-center gap-2 ${eficaciaDataSource === 'anterior' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200'}`}><Icon name="history" className="w-3.5 h-3.5" /> Mês Anterior</button>
+                  <button onClick={() => setEficaciaDataSource('anterior')} className={`px-4 py-2.5 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-widest transition-all cursor-pointer flex items-center gap-2 ${eficaciaDataSource === 'anterior' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200'}`}><Icon name="history" className="w-3.5 h-3.5" /> Histórico Anual</button>
                 </div>
 
                 <div className="flex w-full sm:w-auto items-center gap-2">
