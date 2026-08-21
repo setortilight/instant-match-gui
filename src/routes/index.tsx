@@ -25,9 +25,6 @@ export const Route = createFileRoute("/")({
 function Index() {
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden">
-      <div className="bg-yellow-100 border-b border-yellow-200 py-2 px-4 text-center text-sm font-medium text-yellow-800">
-        o sistema ficou em branco
-      </div>
       <iframe
         src="/sistema.html"
         title="Light BI Telecom - Gestão de Vendas"
