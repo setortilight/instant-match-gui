@@ -3019,6 +3019,7 @@
           <input type="file" id="inputFpd" accept=".csv, .xlsx, .xls" onChange={(e) => handleSpecificCsvUpload(e, 'fpd')} className="hidden" />
           <input type="file" id="inputCancelamento" accept=".csv, .xlsx, .xls" onChange={(e) => handleSpecificCsvUpload(e, 'cancelamento')} className="hidden" />
           <input type="file" id="inputQualidade" accept=".csv, .xlsx, .xls" onChange={(e) => handleSpecificCsvUpload(e, 'qualidade')} className="hidden" />
+          <input type="file" id="inputFpdAtual" accept=".csv, .xlsx, .xls" onChange={(e) => handleCsvUpload(e, 'fpd_atual')} className="hidden" />
 
           {activeTab === 'capa' ? (
             <div className="w-full h-full bg-[#0a0f1a] flex flex-col items-center justify-center relative overflow-hidden p-6">
