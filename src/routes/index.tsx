@@ -26,7 +26,7 @@ function Index() {
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden">
       <div className="bg-slate-900 text-white p-2 text-[10px] font-mono whitespace-pre-wrap break-all leading-tight border-b border-slate-700">
-        NO BOTÃO DETALHES O CAMPO OBS DA VENDA TEM QUE MOSTRAR O TEXTO QUE ESTÁ NO CSV NA COLUNA AL O Complemento Agendamento Instalação, ESSA INFORMAÇÃO QUE EU QUERO QUE MOSTRE NESSE CAMPO
+        NA ABA EFICÁCIA O BOTÃO DE MES ANTERIOR SERVIRÁ COMO UM BOTÃO DE HISTORICO DO ANO TODO ONDE EU POSSA BUSCAR INFORMAÇÃO DO MES QUE EU FILTRAR, QUANDO CARRECAR O CSV ELE VEJA A DATA E ATUALIZE AS INFORMAÇÕES  DAS DATAS JÁ CARREGADAS DOS MESES ANTERIORES E INDENTIFIQUE A DATA DO CSV QUE ESTÁ SENDO CARREGADO E ATUALIZE SÓ QUANDO HOUVER MUDANÇA NO STATUS
       </div>
       <iframe
         src="/sistema.html"
