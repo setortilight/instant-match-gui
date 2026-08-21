@@ -867,6 +867,7 @@
               let idxCliente = -1, idxVendedor = -1, idxEquipe = -1, idxPlano = -1, idxValor = -1, idxStatus = -1, idxDataVenda = -1;
               let idxCpf = -1, idxCidade = -1, idxOs = -1, idxTurno = -1, idxTelefone = -1, idxObs = -1, idxDataAgendamento = -1, idxStatusAgendamento = -1;
               let idxObsEndereco = -1, idxObsVenda = -1, idxComplementoInstalacao = -1;
+              let idxPedido = -1; // Novo para OSAB
 
               headers.forEach((h, idx) => {
                 if (h.includes('cliente') || h.includes('nome')) if (idxCliente === -1) idxCliente = idx;
@@ -905,19 +906,24 @@
                 const head = h.toLowerCase().trim();
                 if (head.includes('vencimento')) idxDataVencimento = idx;
                 if (head.includes('status') && (head.includes('pgto') || head.includes('pagamento'))) idxStatusPgto = idx;
+                if (head.includes('situação') || head.includes('situacao')) if (idxStatusPgto === -1 && type === 'pg') idxStatusPgto = idx;
                 if (head.includes('obs') && (head.includes('pgto') || head.includes('pagamento'))) idxObsPgto = idx;
                 
                 // Forçar índices específicos para FPD Novo se necessário
-                if (type === 'fpd_atual') {
-                  if (head === 'os') idxOs = idx;
-                  if (head === 'cliente') idxCliente = idx;
-                  if (head === 'cpf') idxCpf = idx;
-                  if (head.includes('instalação')) idxDataAgendamento = idx;
-                  if (head === 'vendedor') idxVendedor = idx;
+                if (type === 'fpd_atual' || type === 'osab') {
+                  if (head === 'os' || head === 'pedido' || head === 'nº pedido') {
+                    idxOs = idx;
+                    if (head.includes('pedido')) idxPedido = idx;
+                  }
+                  if (head === 'cliente' || head === 'nome do cliente') idxCliente = idx;
+                  if (head === 'cpf' || head === 'cpf/cnpj') idxCpf = idx;
+                  if (head.includes('instalação') || head.includes('agendamento') || head.includes('data de agendamento')) idxDataAgendamento = idx;
+                  if (head === 'vendedor' || head === 'consultor') idxVendedor = idx;
                   if (head === 'equipe') idxEquipe = idx;
                   if (head.includes('telefone')) idxTelefone = idx;
                   if (head.includes('plano')) idxPlano = idx;
                   if (head.includes('cidade')) idxCidade = idx;
+                  if (head.includes('situação') || head.includes('situacao')) idxStatus = idx;
                   if (head.includes('obs endereço')) idxObsEndereco = idx;
                 }
               });
@@ -1094,9 +1100,51 @@
                     return merged;
                   });
                 } else if (type === 'osab') {
+                  setFpdSalesData(prev => {
+                    const merged = [...prev];
+                    parsed.forEach(newItem => {
+                      const matchIdx = merged.findIndex(old => 
+                        (newItem.os && String(old.os) === String(newItem.os)) ||
+                        (newItem.cpf && String(old.cpf) === String(newItem.cpf)) ||
+                        (old.cliente === newItem.cliente && old.dataVendaIso === newItem.dataVendaIso)
+                      );
+                      if (matchIdx > -1) {
+                        // Atualiza status e data de agendamento do OSAB no registro consolidado
+                        merged[matchIdx] = { 
+                          ...merged[matchIdx], 
+                          status: newItem.status,
+                          statusAgendamento: newItem.status,
+                          dataAgendamento: newItem.dataAgendamento 
+                        };
+                      } else {
+                        merged.push(newItem);
+                      }
+                    });
+                    localStorage.setItem('lightBiFpdAtual', JSON.stringify(merged));
+                    return merged;
+                  });
                   setOsabData(parsed);
                   localStorage.setItem('lightBiOsabData', JSON.stringify(parsed));
                 } else if (type === 'pg') {
+                  setFpdSalesData(prev => {
+                    const merged = [...prev];
+                    parsed.forEach(newItem => {
+                      const matchIdx = merged.findIndex(old => 
+                        (newItem.os && String(old.os) === String(newItem.os)) ||
+                        (newItem.cpf && String(old.cpf) === String(newItem.cpf))
+                      );
+                      if (matchIdx > -1) {
+                        // Atualiza status de pagamento
+                        merged[matchIdx] = { 
+                          ...merged[matchIdx], 
+                          statusPgto: newItem.statusPgto || 'PAGO',
+                          obsPgto: newItem.obsPgto || 'ATUALIZADO VIA PG'
+                        };
+                      }
+                    });
+                    localStorage.setItem('lightBiFpdAtual', JSON.stringify(merged));
+                    return merged;
+                  });
                   setPgData(parsed);
                   localStorage.setItem('lightBiPgData', JSON.stringify(parsed));
                 } else if (type === 'csv_cancel') {
@@ -2638,10 +2686,6 @@
                 <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col items-center justify-center py-10">
                   <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-400 italic mb-6">Controle de Arquivos (Setor Cancelamento)</h3>
                   
-                  <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 text-[11px] font-bold px-4 py-3 rounded-xl mb-6 text-center max-w-2xl w-full">
-                    ESSE É O ARQUIVO QUE SERÁ CARREGADO NO BOTÃO O OSAB, ESSE ARQUIVO IREMOS PEGAR A INFORMAÇÃO DA COLUNA PEDIDO, COLUNA SITUAÇÃO, COLUNA DATA DE AGENDAMENTO
-                  </div>
-
                   <div className="flex flex-wrap items-center justify-center gap-4 w-full">
                     <input type="file" id="inputOsab" accept=".csv,.xlsx,.xls" className="hidden" onChange={(e) => handleCsvUpload(e, 'osab')} />
                     <button onClick={() => document.getElementById('inputOsab').click()} className="bg-amber-500 hover:bg-amber-600 text-white font-black text-[11px] uppercase tracking-widest px-8 py-4 rounded-[1.5rem] shadow-lg flex items-center gap-3 transition-all hover:scale-105 cursor-pointer">
