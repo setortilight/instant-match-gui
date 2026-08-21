@@ -25,6 +25,9 @@ export const Route = createFileRoute("/")({
 function Index() {
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden">
+      <div className="bg-yellow-100 border-b border-yellow-200 p-2 text-center text-sm font-medium text-yellow-800">
+        O GRAFICO DE VOLUME HISTORICO DE REGISTROS FPD PODE SER REMOVIDO E CRIE OS BOTOES DE CARREGAMENTO PEDIDO
+      </div>
       <iframe
         src="/sistema.html"
         title="Light BI Telecom - Gestão de Vendas"
