@@ -943,21 +943,22 @@
                     const merged = [...prev];
                     parsed.forEach(newItem => {
                       const matchIdx = merged.findIndex(old => 
-                        (old.cliente === newItem.cliente && old.dataVendaIso === newItem.dataVendaIso) ||
-                        (newItem.os && old.os === newItem.os) ||
-                        (newItem.cpf && old.cpf === newItem.cpf)
+                        (newItem.os && String(old.os) === String(newItem.os)) ||
+                        (newItem.cpf && String(old.cpf) === String(newItem.cpf)) ||
+                        (old.cliente === newItem.cliente && old.dataVendaIso === newItem.dataVendaIso)
                       );
                       
                       if (matchIdx > -1) {
-                        const oldItem = merged[matchIdx];
-                        const oldStatus = oldItem.statusAgendamento || oldItem.status;
-                        const newStatus = newItem.statusAgendamento || newItem.status;
-                        
-                        if (oldStatus !== newStatus) {
-                          merged[matchIdx] = { ...oldItem, ...newItem };
-                        }
+                        // SEMPRE SOBRESCREVE o registro anterior para atualizar status, obs, etc.
+                        merged[matchIdx] = { ...merged[matchIdx], ...newItem };
                       } else {
                         merged.push(newItem);
+                      }
+                    });
+                    localStorage.setItem('lightBiEficaciaAnterior', JSON.stringify(merged));
+                    return merged;
+                  });
+                }
                       }
                     });
                     localStorage.setItem('lightBiEficaciaAnterior', JSON.stringify(merged));
