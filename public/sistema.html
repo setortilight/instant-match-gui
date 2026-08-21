@@ -1574,6 +1574,15 @@
           }
           if (fpdFilterEquipe !== 'TODAS' && item.equipe !== fpdFilterEquipe) return false;
           if (fpdFilterStatusPgto !== 'TODOS' && item.statusPgto !== fpdFilterStatusPgto) return false;
+          
+          // Filtro de Data Personalizado (Período)
+          if (fpdFilterDateStart || fpdFilterDateEnd) {
+            const dateStr = item.dataVencimentoIso || item.dataVendaIso;
+            if (!dateStr) return false;
+            if (fpdFilterDateStart && dateStr < fpdFilterDateStart) return false;
+            if (fpdFilterDateEnd && dateStr > fpdFilterDateEnd) return false;
+          }
+
           if (fpdFilterVendedor !== 'TODOS' && item.vendedor !== fpdFilterVendedor) return false;
           
           // Lógica de Faixa
@@ -1590,7 +1599,7 @@
           }
           return true;
         });
-      }, [validFpdSales, fpdSelectedMonth, fpdFilterEquipe, fpdFilterStatusPgto, fpdFilterFaixa, fpdFilterVendedor, fpdSearchText]);
+      }, [validFpdSales, fpdSelectedMonth, fpdFilterEquipe, fpdFilterStatusPgto, fpdFilterFaixa, fpdFilterVendedor, fpdSearchText, fpdFilterDateStart, fpdFilterDateEnd]);
 
       const calculateFpdFaixa = (dataVencIso) => {
         if (!dataVencIso) return 'N/A';
